@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Flame,
-  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,32 +27,25 @@ export function HeroSection() {
   const { selectArticle, toggleBookmark, isBookmarked } = useAppStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [direction, setDirection] = useState(1);
-  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   const fetchTopStories = useCallback(async (useCache: boolean = true) => {
-    if (!useCache) setRefreshing(true);
     try {
       const cacheParam = useCache ? "" : "&nocache=true";
       const res = await fetch(`/api/news/rss?category=top-stories${cacheParam}`);
       const data = await res.json();
       if (data.success && data.articles.length > 0) {
-        // Only keep articles that have actual images
         const withImages = data.articles.filter(
           (a: NewsArticle) => a.image && a.image.length > 0
         );
         if (withImages.length > 0) {
           setArticles((prev) => {
-            // For refresh: merge new articles, deduplicate by id, sort newest first
             if (!useCache && prev.length > 0) {
               const mergedMap = new Map<string, NewsArticle>();
-              // Add new articles first (they take priority)
               withImages.forEach((a: NewsArticle) => mergedMap.set(a.id, a));
-              // Add existing articles that aren't in the new set
               prev.forEach((a) => {
                 if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
               });
@@ -67,14 +59,12 @@ export function HeroSection() {
             }
             return withImages.slice(0, 8);
           });
-          setLastRefresh(Date.now());
         }
       }
     } catch (err) {
       console.error("Failed to fetch top stories:", err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -104,7 +94,7 @@ export function HeroSection() {
     return () => clearInterval(interval);
   }, [articles.length, isPaused]);
 
-  // Reset index when articles change significantly
+  // Reset index when top article changes
   useEffect(() => {
     setCurrentIndex(0);
   }, [articles.length > 0 ? articles[0]?.id : ""]);
@@ -164,7 +154,6 @@ export function HeroSection() {
     toggleBookmark(featured.id);
   };
 
-  // Animation variants for crossfade with subtle scale
   const imageVariants = {
     enter: (dir: number) => ({
       opacity: 0,
@@ -207,7 +196,6 @@ export function HeroSection() {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Full-width hero container */}
       <div className="relative w-full h-[350px] sm:h-[420px] md:h-[500px] lg:h-[560px] xl:h-[600px] overflow-hidden bg-black">
         {/* Animated Image Background */}
         <AnimatePresence mode="popLayout" custom={direction}>
@@ -238,11 +226,9 @@ export function HeroSection() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Dark gradient overlays for text readability */}
+        {/* Dark gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
-
-        {/* Subtle vignette */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.3)_100%)]" />
 
         {/* Clickable area */}
@@ -256,7 +242,7 @@ export function HeroSection() {
           aria-label={`Read: ${featured.title}`}
         />
 
-        {/* Text Content Overlay - Bottom Left */}
+        {/* Text Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 pb-8 sm:pb-10 md:pb-12 lg:pb-14">
             <AnimatePresence mode="wait" custom={direction}>
@@ -274,7 +260,7 @@ export function HeroSection() {
                 }}
                 className="max-w-3xl lg:max-w-4xl pointer-events-auto"
               >
-                {/* Category badge + Hot indicator + Time */}
+                {/* Badge + Time */}
                 <div className="flex items-center gap-3 mb-3 sm:mb-4">
                   {isHot && (
                     <Badge className="bg-red-600 text-white border-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wider gap-1 animate-pulse">
@@ -304,7 +290,7 @@ export function HeroSection() {
                   {featured.title}
                 </h1>
 
-                {/* Description (desktop only) */}
+                {/* Description */}
                 <p className="hidden sm:block mt-3 sm:mt-4 text-white/70 text-sm sm:text-base lg:text-lg leading-relaxed line-clamp-2 max-w-2xl lg:max-w-3xl [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
                   {featured.description}
                 </p>
@@ -339,30 +325,6 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Refresh button - top right */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            fetchTopStories(false);
-          }}
-          disabled={refreshing}
-          className={cn(
-            "absolute top-4 right-4 sm:top-6 sm:right-6 z-30",
-            "w-9 h-9 sm:w-10 sm:h-10 rounded-full",
-            "bg-black/20 backdrop-blur-md border border-white/10",
-            "text-white/80 hover:text-white hover:bg-black/40 hover:border-white/30",
-            "flex items-center justify-center",
-            "transition-all duration-200 hover:scale-110 active:scale-95",
-            "shadow-lg shadow-black/20"
-          )}
-          aria-label="Refresh stories"
-          title={`Last updated: ${formatTimeAgo(new Date(lastRefresh).toISOString())}`}
-        >
-          <RefreshCw
-            className={cn("h-4 w-4", refreshing && "animate-spin")}
-          />
-        </button>
-
         {/* Navigation Arrows */}
         {articles.length > 1 && (
           <>
@@ -374,7 +336,6 @@ export function HeroSection() {
                 text-white/80 hover:text-white hover:bg-black/40 hover:border-white/30
                 flex items-center justify-center
                 transition-all duration-200 hover:scale-110 active:scale-95
-                opacity-0 hover:opacity-100 focus:opacity-100
                 [opacity:0] hover:[opacity:1] focus:[opacity:1]
                 shadow-lg shadow-black/20"
               aria-label="Previous story"
@@ -398,7 +359,7 @@ export function HeroSection() {
           </>
         )}
 
-        {/* Navigation Indicator Lines - Bottom Right */}
+        {/* Indicator Lines */}
         {articles.length > 1 && (
           <div className="absolute bottom-6 sm:bottom-8 md:bottom-10 right-4 sm:right-6 md:right-8 z-30 flex items-center gap-2">
             {articles.map((article, i) => (
@@ -417,7 +378,7 @@ export function HeroSection() {
           </div>
         )}
 
-        {/* Progress bar for auto-rotation */}
+        {/* Progress bar */}
         {!isPaused && articles.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 z-30 h-[2px] bg-white/5">
             <AnimatePresence mode="wait">

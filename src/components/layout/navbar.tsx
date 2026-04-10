@@ -12,16 +12,13 @@ import {
   X,
   Home,
   Newspaper,
-  Globe,
-  MapPin,
-  Compass,
   Building2,
   Cpu,
   Microscope,
   Trophy,
-  CircleDot,
   Theater,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,26 +87,11 @@ export function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const navBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
   }, []);
-
-  // Close dropdown on scroll
-  useEffect(() => {
-    const handleScroll = () => setOpenDropdown(null);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClick = () => setOpenDropdown(null);
-    if (openDropdown) {
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }
-  }, [openDropdown]);
 
   const handleSearch = useCallback(
     (value: string) => {
@@ -134,15 +116,6 @@ export function Navbar() {
     }
   };
 
-  const handleDropdownEnter = (label: string) => {
-    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-    setOpenDropdown(label);
-  };
-
-  const handleDropdownLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => setOpenDropdown(null), 150);
-  };
-
   const handleCategoryClick = (category: Category) => {
     setCategory(category);
     setOpenDropdown(null);
@@ -152,6 +125,30 @@ export function Navbar() {
 
   const isActiveCategory = (category: Category) =>
     currentView === "category" && selectedCategory === category;
+
+  // Close dropdown when clicking outside the nav bar
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (navBarRef.current && !navBarRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    }
+    if (openDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openDropdown]);
+
+  // Close dropdown on scroll
+  useEffect(() => {
+    const handleScroll = () => setOpenDropdown(null);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleDropdown = (label: string) => {
+    setOpenDropdown((prev) => (prev === label ? null : label));
+  };
 
   return (
     <>
@@ -309,10 +306,13 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Category Navigation Bar */}
-        <nav className="hidden lg:block border-b border-border/50 bg-background">
+        {/* Category Navigation Bar — NO overflow-x-auto to prevent dropdown clipping */}
+        <nav
+          ref={navBarRef}
+          className="hidden lg:block border-b border-border/50 bg-background"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="flex items-center gap-0.5 h-10 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-0.5 h-10">
               {/* Home */}
               <button
                 onClick={() => {
@@ -332,65 +332,93 @@ export function Navbar() {
 
               <div className="w-px h-5 bg-border/40 mx-1" />
 
-              {/* Dropdown groups */}
-              {navGroups.map((group) => (
-                <div
-                  key={group.label}
-                  className="relative"
-                  onMouseEnter={() => handleDropdownEnter(group.label)}
-                  onMouseLeave={handleDropdownLeave}
-                >
-                  <button
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors",
-                      openDropdown === group.label
-                        ? "bg-red-600 text-white"
-                        : group.items.some((i) => isActiveCategory(i.category))
-                          ? "text-red-600 dark:text-red-400 font-semibold"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(
-                        openDropdown === group.label ? null : group.label
+              {/* Dropdown groups — each is a positioned container */}
+              {navGroups.map((group) => {
+                const isOpen = openDropdown === group.label;
+                const hasActive = group.items.some((i) =>
+                  isActiveCategory(i.category)
+                );
+
+                return (
+                  <div
+                    key={group.label}
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (dropdownTimeoutRef.current)
+                        clearTimeout(dropdownTimeoutRef.current);
+                      setOpenDropdown(group.label);
+                    }}
+                    onMouseLeave={() => {
+                      dropdownTimeoutRef.current = setTimeout(
+                        () => setOpenDropdown(null),
+                        200
                       );
                     }}
                   >
-                    <group.icon className="h-3.5 w-3.5" />
-                    {group.label}
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
+                    <button
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors",
+                        isOpen
+                          ? "bg-red-600 text-white"
+                          : hasActive
+                            ? "text-red-600 dark:text-red-400 font-semibold"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleDropdown(group.label)}
+                    >
+                      <group.icon className="h-3.5 w-3.5" />
+                      {group.label}
+                      <ChevronDown
+                        className={cn(
+                          "h-3 w-3 transition-transform duration-200",
+                          isOpen && "rotate-180"
+                        )}
+                      />
+                    </button>
 
-                  {/* Dropdown */}
-                  <AnimatePresence>
-                    {openDropdown === group.label && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 mt-1 w-48 py-1 rounded-lg border border-border/50 bg-popover shadow-xl z-50"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {group.items.map((item) => (
-                          <button
-                            key={item.category}
-                            onClick={() => handleCategoryClick(item.category)}
-                            className={cn(
-                              "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors",
-                              isActiveCategory(item.category)
-                                ? "bg-muted font-medium text-foreground"
-                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                            )}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
+                    {/* Dropdown panel — positioned OUTSIDE any overflow container */}
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 mt-1 w-52 py-1.5 rounded-lg border border-border/50 bg-popover shadow-xl z-[60]"
+                          onMouseEnter={() => {
+                            if (dropdownTimeoutRef.current)
+                              clearTimeout(dropdownTimeoutRef.current);
+                          }}
+                          onMouseLeave={() => {
+                            dropdownTimeoutRef.current = setTimeout(
+                              () => setOpenDropdown(null),
+                              200
+                            );
+                          }}
+                        >
+                          {group.items.map((item) => (
+                            <button
+                              key={item.category}
+                              onClick={() =>
+                                handleCategoryClick(item.category)
+                              }
+                              className={cn(
+                                "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors",
+                                isActiveCategory(item.category)
+                                  ? "bg-muted font-medium text-foreground"
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              )}
+                            >
+                              <ChevronRight className="h-3 w-3 opacity-40" />
+                              {item.label}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
 
               <div className="w-px h-5 bg-border/40 mx-1" />
 
@@ -479,7 +507,7 @@ export function Navbar() {
                   </div>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 transition-transform",
+                      "h-4 w-4 transition-transform duration-200",
                       mobileSubmenu === "news" && "rotate-180"
                     )}
                   />
@@ -528,7 +556,7 @@ export function Navbar() {
                   </div>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 transition-transform",
+                      "h-4 w-4 transition-transform duration-200",
                       mobileSubmenu === "sport" && "rotate-180"
                     )}
                   />

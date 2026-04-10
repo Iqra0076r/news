@@ -126,3 +126,29 @@ Stage Summary:
 - Hero features "Breaking" indicator for hot/recent news (within 3 hours)
 - Manual refresh button available in hero and category views
 - Clean lint, all routes working, verified HD URLs via API test
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Remove refresh buttons, remove article count text, fix broken dropdown menus
+
+Work Log:
+- Removed refresh button from hero section — auto-fetch only (every 10 minutes with nocache=true)
+- Removed RefreshCw import and all related state (refreshing, lastRefresh) from hero
+- Removed "X articles available" text from category view header
+- Removed refresh button from category view header
+- **Fixed broken News/Sport dropdown menus**: Root cause was `overflow-x-auto` on the nav flex container which was clipping absolutely-positioned dropdown panels
+- Removed `overflow-x-auto no-scrollbar` from nav flex container
+- Replaced document-level click listener with `mousedown` listener that properly checks `navBarRef.current.contains(target)` for accurate outside-click detection
+- Added `onMouseEnter`/`onMouseLeave` handlers to dropdown panels themselves (not just the trigger button) for proper hover behavior
+- Added `ChevronRight` arrows to dropdown items for better visual affordance
+- Increased dropdown z-index to `z-[60]` to ensure it stays above all content
+- Mobile submenus were already working correctly — confirmed and kept
+
+Stage Summary:
+- No refresh buttons anywhere — auto-fetch every 10 minutes for all sections
+- No "articles available" count text shown
+- News and Sport desktop dropdown menus now work properly (hover and click)
+- All dropdown submenu items (Top Stories, World, UK, Asia, etc.) are clickable and navigate correctly
+- Mobile menu submenus (News > expand, Sport > expand) work correctly
+- Clean lint, all compiling

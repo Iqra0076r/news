@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrendingUp } from "lucide-react";
 import { NewsCard } from "@/components/news/news-card";
 import { GridSkeleton } from "@/components/news/skeleton-cards";
 import { useAppStore } from "@/store/news-store";
@@ -16,12 +15,9 @@ export function CategoryView() {
   const { selectedCategory } = useAppStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const fetchCategoryNews = useCallback(async (nocache = false) => {
-    if (nocache) setRefreshing(true);
-    else setLoading(true);
-
+    setLoading(true);
     try {
       const cacheParam = nocache ? "&nocache=true" : "";
       const res = await fetch(
@@ -35,7 +31,6 @@ export function CategoryView() {
       console.error("Failed to fetch category news:", err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [selectedCategory]);
 
@@ -58,32 +53,11 @@ export function CategoryView() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/10 text-red-600 dark:text-red-400">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{label}</h1>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading..."
-                : `${articles.length} articles available`}
-            </p>
-          </div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/10 text-red-600 dark:text-red-400">
+          <TrendingUp className="h-5 w-5" />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 rounded-lg"
-          onClick={() => fetchCategoryNews(true)}
-          disabled={refreshing}
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <h1 className="text-xl font-bold">{label}</h1>
       </div>
 
       {/* Loading */}
