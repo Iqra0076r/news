@@ -57,12 +57,18 @@ export function HeroSection() {
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
       if (bookmarked) {
         const filtered = existing.filter((a) => a.id !== featured.id);
-        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+        localStorage.setItem(
+          "pulse-news-bookmarks-data",
+          JSON.stringify(filtered)
+        );
       } else {
         const exists = existing.find((a) => a.id === featured.id);
         if (!exists) {
           existing.push(featured);
-          localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(existing));
+          localStorage.setItem(
+            "pulse-news-bookmarks-data",
+            JSON.stringify(existing)
+          );
         }
       }
     } catch {
@@ -101,7 +107,9 @@ export function HeroSection() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent md:hidden" />
                 </>
               ) : (
-                <div className={`w-full h-full bg-gradient-to-br ${generatePlaceholderGradient("top-stories")}`} />
+                <div
+                  className={`w-full h-full bg-gradient-to-br ${generatePlaceholderGradient("top-stories")}`}
+                />
               )}
 
               {/* Overlay content on mobile */}
@@ -120,9 +128,6 @@ export function HeroSection() {
               <div className="flex items-center gap-2">
                 <Badge className="bg-red-600 text-white text-xs font-medium">
                   Top Story
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  BBC News
                 </Badge>
               </div>
 

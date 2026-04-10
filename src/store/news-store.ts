@@ -58,7 +58,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "bbc-news-storage",
+      name: "pulse-news-storage",
       partialize: (state) => ({
         bookmarks: state.bookmarks,
       }),

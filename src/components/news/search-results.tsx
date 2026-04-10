@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, X, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useAppStore } from "@/store/news-store";
 import { NewsCard } from "@/components/news/news-card";
 import { GridSkeleton } from "@/components/news/skeleton-cards";
 import type { NewsArticle } from "@/types/news";
 
 export function SearchResults() {
-  const { searchQuery, selectArticle, toggleBookmark, isBookmarked } = useAppStore();
+  const { searchQuery } = useAppStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -65,7 +65,7 @@ export function SearchResults() {
           <Search className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-xl font-bold">Search BBC News</h1>
+          <h1 className="text-xl font-bold">Search News</h1>
           <p className="text-sm text-muted-foreground">
             {loading ? (
               <span className="flex items-center gap-1">
@@ -74,10 +74,12 @@ export function SearchResults() {
               </span>
             ) : hasSearched ? (
               <>
-                {articles.length} result{articles.length !== 1 ? "s" : ""} for &quot;{searchQuery}&quot;
+                {articles.length} result
+                {articles.length !== 1 ? "s" : ""} for &quot;{searchQuery}
+                &quot;
               </>
             ) : (
-              "Type to search BBC News articles"
+              "Type to search news articles"
             )}
           </p>
         </div>
@@ -107,7 +109,8 @@ export function SearchResults() {
           </div>
           <h3 className="text-lg font-semibold mb-2">No results found</h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            We couldn&apos;t find any BBC News articles matching &quot;{searchQuery}&quot;. Try different keywords or browse categories.
+            We couldn&apos;t find any articles matching &quot;{searchQuery}
+            &quot;. Try different keywords or browse categories.
           </p>
         </motion.div>
       )}

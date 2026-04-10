@@ -12,8 +12,8 @@ import {
   Calendar,
   Loader2,
   AlertCircle,
-  Newspaper,
   User,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,13 @@ interface ArticleContent {
 }
 
 export function ArticleDetail() {
-  const { selectedArticle, setView, toggleBookmark, isBookmarked, clearArticle } = useAppStore();
+  const {
+    selectedArticle,
+    setView,
+    toggleBookmark,
+    isBookmarked,
+    clearArticle,
+  } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [content, setContent] = useState<ArticleContent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,10 +53,11 @@ export function ArticleDetail() {
 
     setLoading(true);
     setError(null);
+    setContent(null);
 
     try {
       const res = await fetch(
-        `/api/news/article?url=${encodeURIComponent(selectedArticle.url)}`
+        `/api/news/article?url=${encodeURIComponent(selectedArticle.url)}&nocache=true`
       );
       const data = await res.json();
 
@@ -105,19 +112,24 @@ export function ArticleDetail() {
 
   const handleBookmark = () => {
     if (!selectedArticle) return;
-    // Save article data to localStorage
     try {
       const saved = localStorage.getItem("pulse-news-bookmarks-data");
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
       const bookmarked = isBookmarked(selectedArticle.id);
       if (bookmarked) {
         const filtered = existing.filter((a) => a.id !== selectedArticle.id);
-        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+        localStorage.setItem(
+          "pulse-news-bookmarks-data",
+          JSON.stringify(filtered)
+        );
       } else {
         const exists = existing.find((a) => a.id === selectedArticle.id);
         if (!exists) {
           existing.push(selectedArticle);
-          localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(existing));
+          localStorage.setItem(
+            "pulse-news-bookmarks-data",
+            JSON.stringify(existing)
+          );
         }
       }
     } catch {
@@ -152,7 +164,12 @@ export function ArticleDetail() {
         <div className="sticky top-0 z-10">
           <div className="glass border-b border-border/30">
             <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 rounded-lg">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="gap-2 rounded-lg"
+              >
                 <ArrowLeft className="h-4 w-4" />
                 <span className="text-sm">Back</span>
               </Button>
@@ -169,8 +186,23 @@ export function ArticleDetail() {
                     <Bookmark className="h-5 w-5" />
                   )}
                 </Button>
-                <Button variant="ghost" size="icon" className="rounded-lg" onClick={handleShare}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  onClick={handleShare}
+                >
                   <Share2 className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  onClick={() =>
+                    window.open(selectedArticle.url, "_blank")
+                  }
+                >
+                  <ExternalLink className="h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -194,16 +226,17 @@ export function ArticleDetail() {
         )}
 
         {/* Article Content */}
-        <div className={cn("mx-auto max-w-3xl px-4 sm:px-6 relative z-[1]", displayImage ? "-mt-20" : "pt-6")}>
+        <div
+          className={cn(
+            "mx-auto max-w-3xl px-4 sm:px-6 relative z-[1]",
+            displayImage ? "-mt-20" : "pt-6"
+          )}
+        >
           <article className="bg-card border border-border/50 rounded-xl p-6 sm:p-8 lg:p-10 shadow-xl">
-            {/* Category & Source */}
+            {/* Category */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <Badge className="bg-red-600 text-white border-0 text-xs font-medium capitalize">
                 {selectedArticle.category.replace(/-/g, " ")}
-              </Badge>
-              <Badge variant="secondary" className="text-xs gap-1">
-                <Newspaper className="h-3 w-3" />
-                BBC News
               </Badge>
             </div>
 
@@ -238,7 +271,7 @@ export function ArticleDetail() {
               <div className="space-y-4 py-4">
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Loading full article...</span>
+                  <span className="text-sm">Loading article...</span>
                 </div>
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
@@ -255,13 +288,18 @@ export function ArticleDetail() {
               <div className="flex flex-col items-center py-8 text-center">
                 <AlertCircle className="h-10 w-10 text-destructive mb-3" />
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button variant="outline" size="sm" onClick={handleRetry} className="rounded-lg gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  className="rounded-lg gap-2"
+                >
                   Retry
                 </Button>
               </div>
             )}
 
-            {/* Full article content */}
+            {/* Full article content - cleaned HTML */}
             {content && content.html && !loading && !error && (
               <div
                 className="article-content prose prose-neutral dark:prose-invert max-w-none
@@ -269,7 +307,7 @@ export function ArticleDetail() {
                   prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
                   prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
                   prose-p:text-base prose-p:leading-relaxed prose-p:mb-4
-                  prose-img:rounded-xl prose-img:my-6 prose-img:mx-auto prose-img:max-w-full
+                  prose-img:rounded-xl prose-img:my-6 prose-img:mx-auto prose-img:max-w-full prose-img:shadow-lg
                   prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:no-underline hover:prose-a:underline
                   prose-blockquote:border-l-red-600 dark:prose-blockquote:border-l-red-400 prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4
                   prose-ul:my-4 prose-ol:my-4 prose-li:mb-1
@@ -280,13 +318,24 @@ export function ArticleDetail() {
               />
             )}
 
+            {/* No content available - show description only */}
+            {content && !content.html && !loading && !error && (
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground italic">
+                  The full article content could not be loaded. You can read the
+                  complete article at the source.
+                </p>
+              </div>
+            )}
+
             {/* Bookmark action */}
             <div className="mt-8 pt-6 border-t border-border/50">
               <Button
                 variant="outline"
                 className={cn(
                   "gap-2 rounded-lg w-full sm:w-auto",
-                  bookmarked && "border-red-600/50 text-red-600 dark:text-red-400"
+                  bookmarked &&
+                    "border-red-600/50 text-red-600 dark:text-red-400"
                 )}
                 onClick={handleBookmark}
               >
@@ -304,10 +353,15 @@ export function ArticleDetail() {
               </Button>
             </div>
 
-            {/* Source attribution */}
+            {/* Source attribution - no BBC mention */}
             <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/30">
               <p className="text-xs text-muted-foreground">
-                Source: <span className="font-medium text-foreground">BBC News</span> — This article content is fetched from BBC for reading convenience. All content belongs to its original publisher.
+                Source:{" "}
+                <span className="font-medium text-foreground">
+                  Original Publisher
+                </span>{" "}
+                — This article content is fetched for reading convenience. All
+                content belongs to its original publisher.
               </p>
             </div>
           </article>

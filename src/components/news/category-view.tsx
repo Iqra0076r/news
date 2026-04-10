@@ -54,7 +54,9 @@ export function CategoryView() {
           <div>
             <h1 className="text-xl font-bold">{label}</h1>
             <p className="text-sm text-muted-foreground">
-              {loading ? "Loading..." : `${articles.length} articles from BBC`}
+              {loading
+                ? "Loading..."
+                : `${articles.length} articles available`}
             </p>
           </div>
         </div>
@@ -65,7 +67,9 @@ export function CategoryView() {
           onClick={() => fetchCategoryNews(true)}
           disabled={refreshing}
         >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>
@@ -94,7 +98,8 @@ export function CategoryView() {
           </div>
           <h3 className="text-lg font-semibold mb-2">No articles found</h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            Couldn&apos;t load articles for this category. Please try again later.
+            Couldn&apos;t load articles for this category. Please try again
+            later.
           </p>
         </motion.div>
       )}

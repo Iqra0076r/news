@@ -1,16 +1,24 @@
 "use client";
 
-import { Newspaper, ExternalLink } from "lucide-react";
+import { Newspaper } from "lucide-react";
 import { useAppStore } from "@/store/news-store";
 import { CATEGORY_META } from "@/types/news";
 import type { Category } from "@/types/news";
 
 export function Footer() {
-  const { setCategory, setView } = useAppStore();
+  const { setCategory } = useAppStore();
 
   const newsCategories: Category[] = [
-    "top-stories", "world", "uk", "asia", "middle-east", "africa",
-    "business", "technology", "science", "entertainment",
+    "top-stories",
+    "world",
+    "uk",
+    "asia",
+    "middle-east",
+    "africa",
+    "business",
+    "technology",
+    "science",
+    "entertainment",
   ];
 
   const sportCategories: Category[] = ["sport", "football", "cricket"];
@@ -26,12 +34,17 @@ export function Footer() {
                 <Newspaper className="h-4 w-4" />
               </div>
               <div className="flex flex-col leading-none">
-                <span className="text-base font-bold tracking-tight">BBC News</span>
-                <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">Pulse</span>
+                <span className="text-base font-bold tracking-tight">
+                  PulseNews
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
+                  Live
+                </span>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Real-time news from BBC. Stay informed with the latest stories from around the world.
+              Real-time news aggregated from trusted sources. Stay informed with
+              the latest stories from around the world.
             </p>
           </div>
 
@@ -90,14 +103,18 @@ export function Footer() {
                 <span className="text-sm text-muted-foreground">Contact</span>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">Privacy Policy</span>
+                <span className="text-sm text-muted-foreground">
+                  Privacy Policy
+                </span>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">Terms of Service</span>
+                <span className="text-sm text-muted-foreground">
+                  Terms of Service
+                </span>
               </li>
             </ul>
             <p className="text-xs text-muted-foreground mt-4">
-              Powered by BBC RSS feeds
+              Aggregated from trusted news sources
             </p>
           </div>
         </div>
@@ -105,10 +122,11 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} BBC News Pulse. All content belongs to BBC.
+            &copy; {new Date().getFullYear()} PulseNews. All content belongs to
+            its original publishers.
           </p>
           <p className="text-xs text-muted-foreground">
-            News sourced from BBC RSS feeds
+            News sourced from trusted RSS feeds
           </p>
         </div>
       </div>

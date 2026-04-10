@@ -28,7 +28,6 @@ import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/news-store";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types/news";
-import { CATEGORY_META } from "@/types/news";
 
 interface NavGroup {
   label: string;
@@ -60,7 +59,11 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const standaloneCategories: { category: Category; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const standaloneCategories: {
+  category: Category;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { category: "business", label: "Business", icon: Building2 },
   { category: "technology", label: "Technology", icon: Cpu },
   { category: "science", label: "Science", icon: Microscope },
@@ -108,13 +111,16 @@ export function Navbar() {
     }
   }, [openDropdown]);
 
-  const handleSearch = useCallback((value: string) => {
-    setSearchValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchQuery(value);
-    }, 400);
-  }, [setSearchQuery]);
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setSearchQuery(value);
+      }, 400);
+    },
+    [setSearchQuery]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -166,8 +172,12 @@ export function Navbar() {
                   <Newspaper className="h-4 w-4" />
                 </div>
                 <div className="hidden sm:flex flex-col leading-none">
-                  <span className="text-base font-bold tracking-tight">BBC News</span>
-                  <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">Pulse</span>
+                  <span className="text-base font-bold tracking-tight">
+                    PulseNews
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
+                    Live
+                  </span>
                 </div>
               </button>
 
@@ -183,7 +193,7 @@ export function Navbar() {
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="Search BBC News..."
+                    placeholder="Search news..."
                     value={searchValue}
                     onChange={(e) => handleSearch(e.target.value)}
                     onFocus={() => setSearchFocused(true)}
@@ -222,7 +232,10 @@ export function Navbar() {
                   <Bookmark className="h-4 w-4" />
                   Saved
                   {bookmarks.length > 0 && (
-                    <Badge variant="default" className="h-5 min-w-5 px-1.5 text-[10px] rounded-full">
+                    <Badge
+                      variant="default"
+                      className="h-5 min-w-5 px-1.5 text-[10px] rounded-full"
+                    >
                       {bookmarks.length}
                     </Badge>
                   )}
@@ -270,7 +283,11 @@ export function Navbar() {
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
                   {mounted ? (
-                    theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
+                    theme === "dark" ? (
+                      <Sun className="h-4 w-4" />
+                    ) : (
+                      <Moon className="h-4 w-4" />
+                    )
                   ) : (
                     <div className="h-4 w-4" />
                   )}
@@ -281,20 +298,27 @@ export function Navbar() {
                   className="rounded-lg"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
-                  {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  {mobileMenuOpen ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Menu className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Category Navigation Bar - BBC style */}
+        {/* Category Navigation Bar */}
         <nav className="hidden lg:block border-b border-border/50 bg-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="flex items-center gap-0.5 h-10 overflow-x-auto no-scrollbar">
               {/* Home */}
               <button
-                onClick={() => { setView("home"); setSearchValue(""); }}
+                onClick={() => {
+                  setView("home");
+                  setSearchValue("");
+                }}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors",
                   currentView === "home"
@@ -327,7 +351,9 @@ export function Navbar() {
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenDropdown(openDropdown === group.label ? null : group.label);
+                      setOpenDropdown(
+                        openDropdown === group.label ? null : group.label
+                      );
                     }}
                   >
                     <group.icon className="h-3.5 w-3.5" />
@@ -399,7 +425,10 @@ export function Navbar() {
             transition={{ duration: 0.2 }}
             className="lg:hidden fixed inset-0 top-14 z-40"
           >
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+            <div
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => setMobileMenuOpen(false)}
+            />
             <nav className="relative mx-3 mt-2 rounded-xl border border-border/50 bg-card shadow-xl max-h-[80vh] overflow-y-auto">
               {/* Mobile search */}
               <div className="p-3 border-b border-border/30">
@@ -407,7 +436,7 @@ export function Navbar() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search BBC News..."
+                    placeholder="Search news..."
                     value={searchValue}
                     onChange={(e) => handleSearch(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -419,10 +448,16 @@ export function Navbar() {
               {/* Home */}
               <div className="p-1">
                 <button
-                  onClick={() => { setView("home"); setSearchValue(""); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    setView("home");
+                    setSearchValue("");
+                    setMobileMenuOpen(false);
+                  }}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                    currentView === "home" ? "bg-red-600 text-white font-medium" : "hover:bg-muted/50"
+                    currentView === "home"
+                      ? "bg-red-600 text-white font-medium"
+                      : "hover:bg-muted/50"
                   )}
                 >
                   <Home className="h-4 w-4" />
@@ -433,14 +468,21 @@ export function Navbar() {
               {/* News group */}
               <div className="border-t border-border/30">
                 <button
-                  onClick={() => setMobileSubmenu(mobileSubmenu === "news" ? null : "news")}
+                  onClick={() =>
+                    setMobileSubmenu(mobileSubmenu === "news" ? null : "news")
+                  }
                   className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <Newspaper className="h-4 w-4" />
                     News
                   </div>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", mobileSubmenu === "news" && "rotate-180")} />
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      mobileSubmenu === "news" && "rotate-180"
+                    )}
+                  />
                 </button>
                 <AnimatePresence>
                   {mobileSubmenu === "news" && (
@@ -473,14 +515,23 @@ export function Navbar() {
               {/* Sport group */}
               <div className="border-t border-border/30">
                 <button
-                  onClick={() => setMobileSubmenu(mobileSubmenu === "sport" ? null : "sport")}
+                  onClick={() =>
+                    setMobileSubmenu(
+                      mobileSubmenu === "sport" ? null : "sport"
+                    )
+                  }
                   className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <Trophy className="h-4 w-4" />
                     Sport
                   </div>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", mobileSubmenu === "sport" && "rotate-180")} />
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      mobileSubmenu === "sport" && "rotate-180"
+                    )}
+                  />
                 </button>
                 <AnimatePresence>
                   {mobileSubmenu === "sport" && (
@@ -532,16 +583,24 @@ export function Navbar() {
               {/* Saved */}
               <div className="border-t border-border/30 p-1">
                 <button
-                  onClick={() => { setView("bookmarks"); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    setView("bookmarks");
+                    setMobileMenuOpen(false);
+                  }}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                    currentView === "bookmarks" ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/50"
+                    currentView === "bookmarks"
+                      ? "bg-muted font-medium"
+                      : "text-muted-foreground hover:bg-muted/50"
                   )}
                 >
                   <Bookmark className="h-4 w-4" />
                   Saved Articles
                   {bookmarks.length > 0 && (
-                    <Badge variant="default" className="ml-auto h-5 min-w-5 px-1.5 text-[10px] rounded-full">
+                    <Badge
+                      variant="default"
+                      className="ml-auto h-5 min-w-5 px-1.5 text-[10px] rounded-full"
+                    >
                       {bookmarks.length}
                     </Badge>
                   )}

@@ -15,7 +15,13 @@ interface NewsCardProps {
   index?: number;
 }
 
-function ArticleImage({ article, className }: { article: NewsArticle; className?: string }) {
+function ArticleImage({
+  article,
+  className,
+}: {
+  article: NewsArticle;
+  className?: string;
+}) {
   const fallbackGradient = generatePlaceholderGradient(article.category);
 
   if (article.image) {
@@ -32,32 +38,48 @@ function ArticleImage({ article, className }: { article: NewsArticle; className?
   }
 
   return (
-    <div className={cn("w-full h-full bg-gradient-to-br", fallbackGradient, "flex items-center justify-center")}>
+    <div
+      className={cn(
+        "w-full h-full bg-gradient-to-br flex items-center justify-center",
+        fallbackGradient
+      )}
+    >
       <div className="text-white/80 text-center p-4">
-        <p className="text-xs font-medium uppercase tracking-wider opacity-70">BBC News</p>
+        <p className="text-xs font-medium uppercase tracking-wider opacity-70">
+          PulseNews
+        </p>
       </div>
     </div>
   );
 }
 
-export function NewsCard({ article, variant = "default", index = 0 }: NewsCardProps) {
+export function NewsCard({
+  article,
+  variant = "default",
+  index = 0,
+}: NewsCardProps) {
   const { selectArticle, toggleBookmark, isBookmarked } = useAppStore();
   const bookmarked = isBookmarked(article.id);
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Save article data to localStorage for bookmarks
     try {
       const saved = localStorage.getItem("pulse-news-bookmarks-data");
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
       if (bookmarked) {
         const filtered = existing.filter((a) => a.id !== article.id);
-        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+        localStorage.setItem(
+          "pulse-news-bookmarks-data",
+          JSON.stringify(filtered)
+        );
       } else {
         const exists = existing.find((a) => a.id === article.id);
         if (!exists) {
           existing.push(article);
-          localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(existing));
+          localStorage.setItem(
+            "pulse-news-bookmarks-data",
+            JSON.stringify(existing)
+          );
         }
       }
     } catch {
@@ -80,12 +102,15 @@ export function NewsCard({ article, variant = "default", index = 0 }: NewsCardPr
             <ArticleImage article={article} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
             <Badge className="absolute top-3 left-3 bg-red-600 text-white border-0 text-xs font-medium">
-              BBC News
+              Featured
             </Badge>
           </div>
           <div className="p-5 flex flex-col justify-center gap-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="text-xs font-medium capitalize">
+              <Badge
+                variant="secondary"
+                className="text-xs font-medium capitalize"
+              >
                 {article.category.replace(/-/g, " ")}
               </Badge>
               <span className="flex items-center gap-1">
@@ -103,8 +128,20 @@ export function NewsCard({ article, variant = "default", index = 0 }: NewsCardPr
               <span className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                 Read full story <ArrowRight className="h-3 w-3" />
               </span>
-              <button onClick={handleBookmark} className={cn("p-2 rounded-lg transition-colors", bookmarked ? "text-red-600 dark:text-red-400 bg-red-600/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-                {bookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+              <button
+                onClick={handleBookmark}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  bookmarked
+                    ? "text-red-600 dark:text-red-400 bg-red-600/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                {bookmarked ? (
+                  <BookmarkCheck className="h-4 w-4" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
@@ -127,15 +164,31 @@ export function NewsCard({ article, variant = "default", index = 0 }: NewsCardPr
         </div>
         <div className="flex flex-col justify-center gap-1.5 min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">BBC News</span>
-            <span className="text-xs text-muted-foreground/60">{formatTimeAgo(article.publishedAt)}</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {article.category.replace(/-/g, " ")}
+            </span>
+            <span className="text-xs text-muted-foreground/60">
+              {formatTimeAgo(article.publishedAt)}
+            </span>
           </div>
           <h3 className="text-sm font-semibold leading-snug line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
             {article.title}
           </h3>
         </div>
-        <button onClick={handleBookmark} className={cn("p-1.5 rounded-lg transition-colors self-start shrink-0 mt-1", bookmarked ? "text-red-600 dark:text-red-400" : "text-muted-foreground hover:text-foreground")}>
-          {bookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+        <button
+          onClick={handleBookmark}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors self-start shrink-0 mt-1",
+            bookmarked
+              ? "text-red-600 dark:text-red-400"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {bookmarked ? (
+            <BookmarkCheck className="h-3.5 w-3.5" />
+          ) : (
+            <Bookmark className="h-3.5 w-3.5" />
+          )}
         </button>
       </motion.article>
     );
@@ -159,12 +212,25 @@ export function NewsCard({ article, variant = "default", index = 0 }: NewsCardPr
               {article.title}
             </h4>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-xs text-muted-foreground">BBC News</span>
-              <span className="text-xs text-muted-foreground/50">{formatTimeAgo(article.publishedAt)}</span>
+              <span className="text-xs text-muted-foreground">
+                {formatTimeAgo(article.publishedAt)}
+              </span>
             </div>
           </div>
-          <button onClick={handleBookmark} className={cn("p-1.5 rounded-lg transition-colors shrink-0", bookmarked ? "text-red-600 dark:text-red-400" : "text-muted-foreground/40 hover:text-muted-foreground")}>
-            {bookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+          <button
+            onClick={handleBookmark}
+            className={cn(
+              "p-1.5 rounded-lg transition-colors shrink-0",
+              bookmarked
+                ? "text-red-600 dark:text-red-400"
+                : "text-muted-foreground/40 hover:text-muted-foreground"
+            )}
+          >
+            {bookmarked ? (
+              <BookmarkCheck className="h-3.5 w-3.5" />
+            ) : (
+              <Bookmark className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </motion.article>
@@ -186,15 +252,25 @@ export function NewsCard({ article, variant = "default", index = 0 }: NewsCardPr
         <Badge className="absolute top-3 left-3 bg-red-600 text-white border-0 text-[10px] font-medium">
           {article.category.replace(/-/g, " ")}
         </Badge>
-        <button onClick={handleBookmark} className={cn("absolute top-3 right-3 p-2 rounded-lg backdrop-blur-sm transition-all", bookmarked ? "bg-red-600 text-white" : "bg-black/20 text-white/80 hover:bg-black/40 hover:text-white")}>
-          {bookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+        <button
+          onClick={handleBookmark}
+          className={cn(
+            "absolute top-3 right-3 p-2 rounded-lg backdrop-blur-sm transition-all",
+            bookmarked
+              ? "bg-red-600 text-white"
+              : "bg-black/20 text-white/80 hover:bg-black/40 hover:text-white"
+          )}
+        >
+          {bookmarked ? (
+            <BookmarkCheck className="h-3.5 w-3.5" />
+          ) : (
+            <Bookmark className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
       <div className="p-4 flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">BBC News</span>
-          <span className="text-muted-foreground/30">·</span>
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {formatTimeAgo(article.publishedAt)}
           </span>

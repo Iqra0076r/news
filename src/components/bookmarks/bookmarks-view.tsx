@@ -6,7 +6,7 @@ import { Bookmark, Trash2, ExternalLink, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/news-store";
-import { formatTimeAgo, cn } from "@/lib/helpers";
+import { formatTimeAgo } from "@/lib/helpers";
 import { NewsCardSkeleton } from "@/components/news/skeleton-cards";
 import type { NewsArticle } from "@/types/news";
 
