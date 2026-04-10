@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Clock, Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { ArrowRight, Clock, Bookmark, BookmarkCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/news-store";
@@ -95,7 +95,7 @@ export function HeroSection() {
                   Featured
                 </Badge>
                 <Badge variant="secondary" className="text-xs">
-                  {featured.source}
+                  Al Jazeera
                 </Badge>
               </div>
 
@@ -116,7 +116,7 @@ export function HeroSection() {
 
               <div className="flex items-center gap-3 pt-2">
                 <Button className="rounded-xl gap-2">
-                  Read Full Story
+                  Read Story
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button

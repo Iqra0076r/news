@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
 import type { NewsArticle } from "@/types/news";
 
-const cache = new Map<string, { data: NewsArticle[]; timestamp: number }>();
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-
 function generateId(url: string): string {
   let hash = 0;
   for (let i = 0; i < url.length; i++) {
@@ -15,114 +12,111 @@ function generateId(url: string): string {
   return Math.abs(hash).toString(36);
 }
 
-const FALLBACK_IMAGES = [
-  "https://images.unsplash.com/photo-1504711434969-e33886168d3c?w=800&q=80",
-  "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80",
-  "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80",
-  "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80",
-  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
-];
+function extractFirstImage(html: string): string | null {
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (ogMatch && ogMatch[1]) return ogMatch[1];
+  const twMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+  if (twMatch && twMatch[1]) return twMatch[1];
+  const imgMatch = html.match(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp))["']/i);
+  if (imgMatch && imgMatch[1]) return imgMatch[1];
+  return null;
+}
+
+const cache = new Map<string, { data: NewsArticle[]; timestamp: number }>();
+const CACHE_DURATION = 20 * 60 * 1000;
+
+const articleCache = new Map<string, { title: string; html: string; image: string | null; publishedTime: string | null; timestamp: number }>();
+const ARTICLE_CACHE_MS = 30 * 60 * 1000;
+
+async function readArticleContent(url: string) {
+  const cached = articleCache.get(url);
+  if (cached && Date.now() - cached.timestamp < ARTICLE_CACHE_MS) {
+    return { title: cached.title, html: cached.html, image: cached.image, publishedTime: cached.publishedTime };
+  }
+  try {
+    const zai = await ZAI.create();
+    const result = await zai.functions.invoke("page_reader", { url });
+    if (!result || !result.data) return null;
+    const data = result.data as { title?: string; html?: string; publishedTime?: string };
+    const title = data.title || "";
+    const html = data.html || "";
+    const image = extractFirstImage(html);
+    const publishedTime = data.publishedTime || null;
+    articleCache.set(url, { title, html, image, publishedTime, timestamp: Date.now() });
+    return { title, html, image, publishedTime };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
-    const page = parseInt(searchParams.get("page") || "1");
 
     if (!query || query.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Query parameter 'q' is required", articles: [], totalResults: 0 },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Query required", articles: [], totalResults: 0 }, { status: 400 });
     }
 
-    const cacheKey = `search_${query.trim().toLowerCase()}_${page}`;
+    const cacheKey = `search:${query.trim().toLowerCase()}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json({
-        success: true,
-        articles: cached.data,
-        totalResults: cached.data.length,
-        query,
-        cached: true,
-      });
+      return NextResponse.json({ success: true, articles: cached.data, totalResults: cached.data.length, query, cached: true });
     }
-
-    const searchQuery = `${query} news latest 2025`;
 
     const zai = await ZAI.create();
     const results = await zai.functions.invoke("web_search", {
-      query: searchQuery,
+      query: `"aljazeera.com/news" ${query} 2025`,
       num: 20,
-      recency_days: 7,
+      recency_days: 30,
     });
 
     if (!Array.isArray(results) || results.length === 0) {
-      return NextResponse.json({
-        success: true,
-        articles: [],
-        totalResults: 0,
-        query,
-      });
+      return NextResponse.json({ success: true, articles: [], totalResults: 0, query });
     }
 
-    const filtered = results.filter(
-      (r: { name: string; snippet: string; url: string }) =>
-        r.name &&
-        r.name.length > 15 &&
-        r.snippet &&
-        r.snippet.length > 30 &&
-        r.url &&
-        !r.url.includes("pinterest") &&
-        !r.url.includes("facebook") &&
-        !r.url.includes("twitter")
-    );
+    interface SearchResult { url: string; name: string; snippet: string; host_name: string; date: string; favicon: string }
 
-    const articles: NewsArticle[] = filtered.slice(0, 15).map(
-      (result: {
-        url: string;
-        name: string;
-        snippet: string;
-        host_name: string;
-        date: string;
-        favicon: string;
-      }, index: number) => {
-        const domain = result.host_name || new URL(result.url).hostname;
-        const sourceName = domain
-          .replace(/^www\./, "")
-          .split(".")
-          .slice(0, -1)
-          .join(".")
-          .replace(/\b\w/g, (c: string) => c.toUpperCase());
+    const filtered = (results as SearchResult[]).filter((r) => {
+      if (!r.url || !r.url.includes("aljazeera.com") || !r.url.includes("/news/")) return false;
+      if (r.url.includes("/liveblog/")) return false;
+      if (!r.name || r.name.length < 20) return false;
+      if (r.name.includes("Today's latest from") || r.name.includes("| Today's latest")) return false;
+      return true;
+    });
 
-        return {
-          id: generateId(result.url),
-          title: result.name || "Untitled",
-          description: result.snippet || "",
-          content: result.snippet || "",
-          url: result.url,
-          image: FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
-          source: sourceName,
-          sourceIcon: result.favicon || null,
-          publishedAt: result.date || new Date().toISOString(),
-          category: "general" as const,
-        };
-      }
-    );
+    // Fetch article content for top results
+    const topUrls = filtered.slice(0, 8).map((r) => r.url);
+    const articleDataMap = new Map<string, { title: string; html: string; image: string | null; publishedTime: string | null }>();
+
+    for (let i = 0; i < topUrls.length; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 800));
+      const data = await readArticleContent(topUrls[i]);
+      if (data) articleDataMap.set(topUrls[i], data);
+    }
+
+    const articles: NewsArticle[] = filtered.slice(0, 12).map((result) => {
+      const ad = articleDataMap.get(result.url);
+      const plainText = ad?.html ? ad.html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
+      return {
+        id: generateId(result.url),
+        title: (ad?.title || result.name).trim(),
+        description: result.snippet || (plainText ? plainText.slice(0, 300) : ""),
+        content: ad?.html || result.snippet || "",
+        url: result.url,
+        image: ad?.image || null,
+        source: "Al Jazeera",
+        sourceIcon: result.favicon || "https://www.aljazeera.com/favicon.ico",
+        publishedAt: ad?.publishedTime || result.date || new Date().toISOString(),
+        category: "general" as const,
+      };
+    });
 
     cache.set(cacheKey, { data: articles, timestamp: Date.now() });
 
-    return NextResponse.json({
-      success: true,
-      articles,
-      totalResults: articles.length,
-      query,
-    });
+    return NextResponse.json({ success: true, articles, totalResults: articles.length, query });
   } catch (error) {
     console.error("Search API error:", error);
-    return NextResponse.json(
-      { success: false, articles: [], totalResults: 0, error: "Search failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, articles: [], totalResults: 0, error: "Search failed" }, { status: 500 });
   }
 }

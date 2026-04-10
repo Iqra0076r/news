@@ -20,6 +20,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "favicon.im",
       },
+      {
+        protocol: "https",
+        hostname: "www.aljazeera.com",
+      },
+      {
+        protocol: "https",
+        hostname: "c.files.bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "*.twimg.com",
+      },
     ],
   },
 };

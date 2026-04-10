@@ -6,11 +6,14 @@ Task: Build premium news aggregation platform (PulseNews)
 Work Log:
 - Explored existing Next.js 16 project structure with shadcn/ui, Tailwind CSS 4, Framer Motion
 - Created type system (NewsArticle, AppState, Category, etc.) in /src/types/news.ts
-- Built 3 API routes using z-ai-web-dev-sdk web search for real news fetching:
-  - /api/news - General/trending news
-  - /api/news/search - Search with query
-  - /api/news/category - Category-specific news
-- Implemented server-side caching (15min) to avoid rate limits
+- Built 4 API routes using z-ai-web-dev-sdk:
+  - /api/news - General/trending news (Al Jazeera search + page_reader for top 4)
+  - /api/news/search - Search with query (Al Jazeera only)
+  - /api/news/category - Category-specific news (Al Jazeera only)
+  - /api/news/article - Full article content reader via page_reader
+- All search queries use `"aljazeera.com/news"` quoted phrase to target real articles
+- URL filtering: requires `/news/` path, excludes `/liveblog/`, `/longform/`, generic titles
+- Server-side caching (20min for lists, 30min for article content)
 - Built Zustand store with persistence for bookmarks
 - Created comprehensive UI component library:
   - Navbar with search, dark mode, mobile menu
@@ -23,16 +26,21 @@ Work Log:
   - CategorySection with IntersectionObserver lazy loading
   - TrendingSidebar with compact numbered list
   - SearchResults with debounced API calls
-  - ArticleDetail as full-screen overlay
+  - ArticleDetail: full-screen overlay, fetches complete article via page_reader, renders HTML inline
   - BookmarksView with remove/share actions
-- Implemented staggered loading to prevent API rate limiting
+- Article detail shows FULL article content (no external links)
+- All source labels hardcoded to "Al Jazeera"
+- Removed all ExternalLink buttons and external redirections
+- Article images extracted from og:image/twitter:image meta tags
 - Added glassmorphism, animations, responsive design
-- Updated globals.css with custom scrollbar, glassmorphism, gradient text utilities
+- Updated globals.css with custom scrollbar, glassmorphism utilities
 - Updated layout.tsx with ThemeProvider (next-themes)
+- Updated next.config.ts with Al Jazeera image domains
 
 Stage Summary:
-- Complete news aggregation platform with real-time web search data
-- All views: Home, Search, Category, Article Detail, Bookmarks
+- Complete news aggregation platform fetching exclusively from Al Jazeera
+- Real article search via web_search SDK + full content via page_reader SDK
+- All views: Home, Search, Category, Article Detail (full content), Bookmarks
 - Dark mode, responsive design, skeleton loading states
 - Zero lint errors
-- API caching working (4-6ms for cached requests)
+- Article content up to 119KB with embedded images

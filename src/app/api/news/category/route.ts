@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
 import type { NewsArticle } from "@/types/news";
 
-const cache = new Map<string, { data: NewsArticle[]; timestamp: number }>();
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-
 function generateId(url: string): string {
   let hash = 0;
   for (let i = 0; i < url.length; i++) {
@@ -15,43 +12,42 @@ function generateId(url: string): string {
   return Math.abs(hash).toString(36);
 }
 
-const CATEGORY_IMAGES: Record<string, string[]> = {
-  world: [
-    "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&q=80",
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
-    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80",
-  ],
-  technology: [
-    "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80",
-    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
-    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80",
-  ],
-  business: [
-    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
-    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
-  ],
-  sports: [
-    "https://images.unsplash.com/photo-1461896836934-bd45ba7b5b96?w=800&q=80",
-    "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80",
-    "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&q=80",
-  ],
-  health: [
-    "https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800&q=80",
-    "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80",
-    "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&q=80",
-  ],
-  entertainment: [
-    "https://images.unsplash.com/photo-1603190287605-e6ade32fa852?w=800&q=80",
-    "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&q=80",
-    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
-  ],
-  science: [
-    "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&q=80",
-    "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&q=80",
-    "https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=800&q=80",
-  ],
-};
+function extractFirstImage(html: string): string | null {
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (ogMatch && ogMatch[1]) return ogMatch[1];
+  const twMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+  if (twMatch && twMatch[1]) return twMatch[1];
+  const imgMatch = html.match(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp))["']/i);
+  if (imgMatch && imgMatch[1]) return imgMatch[1];
+  return null;
+}
+
+const cache = new Map<string, { data: NewsArticle[]; timestamp: number }>();
+const CACHE_DURATION = 20 * 60 * 1000;
+
+const articleCache = new Map<string, { title: string; html: string; image: string | null; publishedTime: string | null; timestamp: number }>();
+const ARTICLE_CACHE_MS = 30 * 60 * 1000;
+
+async function readArticleContent(url: string) {
+  const cached = articleCache.get(url);
+  if (cached && Date.now() - cached.timestamp < ARTICLE_CACHE_MS) {
+    return { title: cached.title, html: cached.html, image: cached.image, publishedTime: cached.publishedTime };
+  }
+  try {
+    const zai = await ZAI.create();
+    const result = await zai.functions.invoke("page_reader", { url });
+    if (!result || !result.data) return null;
+    const data = result.data as { title?: string; html?: string; publishedTime?: string };
+    const title = data.title || "";
+    const html = data.html || "";
+    const image = extractFirstImage(html);
+    const publishedTime = data.publishedTime || null;
+    articleCache.set(url, { title, html, image, publishedTime, timestamp: Date.now() });
+    return { title, html, image, publishedTime };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,96 +57,74 @@ export async function GET(request: NextRequest) {
     const cacheKey = `cat_${category}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json({
-        success: true,
-        articles: cached.data,
-        totalResults: cached.data.length,
-        category,
-        cached: true,
-      });
+      return NextResponse.json({ success: true, articles: cached.data, totalResults: cached.data.length, category, cached: true });
     }
 
     const queries: Record<string, string> = {
-      world: "world news international events today",
-      technology: "technology news AI gadgets software today",
-      business: "business news economy finance markets today",
-      sports: "sports news football basketball soccer today",
-      health: "health news medicine wellness research today",
-      entertainment: "entertainment news movies music celebrity today",
-      science: "science news space physics biology research today",
+      world: "world news international events",
+      technology: "technology science AI innovation",
+      business: "business economy finance trade",
+      sports: "sports football cricket olympics",
+      health: "health medical science disease",
+      entertainment: "entertainment culture arts film music",
+      science: "science space climate environment discovery",
     };
 
-    const query = queries[category] || "latest news today";
+    const query = queries[category] || "breaking news report";
 
     const zai = await ZAI.create();
     const results = await zai.functions.invoke("web_search", {
-      query,
+      query: `"aljazeera.com/news" ${query} 2025`,
       num: 15,
-      recency_days: 3,
+      recency_days: 14,
     });
 
     if (!Array.isArray(results) || results.length === 0) {
-      return NextResponse.json({
-        success: true,
-        articles: [],
-        totalResults: 0,
-        category,
-      });
+      return NextResponse.json({ success: true, articles: [], totalResults: 0, category });
     }
 
-    const filtered = results.filter(
-      (r: { name: string; snippet: string; url: string }) =>
-        r.name && r.name.length > 15 && r.snippet && r.url &&
-        !r.url.includes("pinterest") && !r.url.includes("facebook")
-    );
+    interface SearchResult { url: string; name: string; snippet: string; host_name: string; date: string; favicon: string }
 
-    const images = CATEGORY_IMAGES[category] || CATEGORY_IMAGES.world;
+    const filtered = (results as SearchResult[]).filter((r) => {
+      if (!r.url || !r.url.includes("aljazeera.com") || !r.url.includes("/news/")) return false;
+      if (r.url.includes("/liveblog/")) return false;
+      if (!r.name || r.name.length < 20) return false;
+      if (r.name.includes("Today's latest from") || r.name.includes("| Today's latest")) return false;
+      return true;
+    });
 
-    const articles: NewsArticle[] = filtered.slice(0, 12).map(
-      (result: {
-        url: string;
-        name: string;
-        snippet: string;
-        host_name: string;
-        date: string;
-        favicon: string;
-      }, index: number) => {
-        const domain = result.host_name || new URL(result.url).hostname;
-        const sourceName = domain
-          .replace(/^www\./, "")
-          .split(".")
-          .slice(0, -1)
-          .join(".")
-          .replace(/\b\w/g, (c: string) => c.toUpperCase());
+    // Fetch article content for results to get images
+    const topUrls = filtered.slice(0, 6).map((r) => r.url);
+    const articleDataMap = new Map<string, { title: string; html: string; image: string | null; publishedTime: string | null }>();
 
-        return {
-          id: generateId(result.url),
-          title: result.name,
-          description: result.snippet || "",
-          content: result.snippet || "",
-          url: result.url,
-          image: images[index % images.length],
-          source: sourceName,
-          sourceIcon: result.favicon || null,
-          publishedAt: result.date || new Date().toISOString(),
-          category,
-        };
-      }
-    );
+    for (let i = 0; i < topUrls.length; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 1000));
+      const data = await readArticleContent(topUrls[i]);
+      if (data) articleDataMap.set(topUrls[i], data);
+    }
+
+    const articles: NewsArticle[] = filtered.slice(0, 12).map((result) => {
+      const ad = articleDataMap.get(result.url);
+      const plainText = ad?.html ? ad.html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
+      return {
+        id: generateId(result.url),
+        title: (ad?.title || result.name).trim(),
+        description: result.snippet || (plainText ? plainText.slice(0, 300) : ""),
+        content: ad?.html || result.snippet || "",
+        url: result.url,
+        image: ad?.image || null,
+        source: "Al Jazeera",
+        sourceIcon: result.favicon || "https://www.aljazeera.com/favicon.ico",
+        publishedAt: ad?.publishedTime || result.date || new Date().toISOString(),
+        category,
+      };
+    });
 
     cache.set(cacheKey, { data: articles, timestamp: Date.now() });
 
-    return NextResponse.json({
-      success: true,
-      articles,
-      totalResults: articles.length,
-      category,
-    });
+    return NextResponse.json({ success: true, articles, totalResults: articles.length, category });
   } catch (error) {
     console.error("Category API error:", error);
-    return NextResponse.json(
-      { success: false, articles: [], totalResults: 0, error: "Failed to fetch category news" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, articles: [], totalResults: 0, error: "Failed to fetch category news" }, { status: 500 });
   }
 }
