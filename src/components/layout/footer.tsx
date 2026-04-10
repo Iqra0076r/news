@@ -1,65 +1,87 @@
 "use client";
 
-import { Zap, Github, ExternalLink } from "lucide-react";
+import { Newspaper, ExternalLink } from "lucide-react";
 import { useAppStore } from "@/store/news-store";
-import { cn } from "@/lib/utils";
-
-const footerLinks = {
-  categories: [
-    { label: "World", value: "world" },
-    { label: "Technology", value: "technology" },
-    { label: "Business", value: "business" },
-    { label: "Sports", value: "sports" },
-    { label: "Health", value: "health" },
-    { label: "Entertainment", value: "entertainment" },
-    { label: "Science", value: "science" },
-  ],
-};
+import { CATEGORY_META } from "@/types/news";
+import type { Category } from "@/types/news";
 
 export function Footer() {
   const { setCategory, setView } = useAppStore();
 
+  const newsCategories: Category[] = [
+    "top-stories", "world", "uk", "asia", "middle-east", "africa",
+    "business", "technology", "science", "entertainment",
+  ];
+
+  const sportCategories: Category[] = ["sport", "football", "cricket"];
+
   return (
-    <footer className="border-t border-border/50 bg-card/50">
+    <footer className="border-t border-border/50 bg-card/50 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Zap className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white">
+                <Newspaper className="h-4 w-4" />
               </div>
-              <span className="text-lg font-bold tracking-tight">
-                Pulse<span className="text-muted-foreground font-light ml-0.5">News</span>
-              </span>
+              <div className="flex flex-col leading-none">
+                <span className="text-base font-bold tracking-tight">BBC News</span>
+                <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">Pulse</span>
+              </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Premium real-time news from trusted sources around the world. Stay informed, stay ahead.
+              Real-time news from BBC. Stay informed with the latest stories from around the world.
             </p>
           </div>
 
-          {/* Categories */}
+          {/* News Categories */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">Categories</h3>
+            <h3 className="text-sm font-semibold mb-4">News</h3>
             <ul className="space-y-2">
-              {footerLinks.categories.map((link) => (
-                <li key={link.value}>
+              {newsCategories.slice(0, 6).map((cat) => (
+                <li key={cat}>
                   <button
-                    onClick={() => {
-                      setCategory(link.value as "world" | "technology" | "business" | "sports" | "health" | "entertainment" | "science");
-                    }}
+                    onClick={() => setCategory(cat)}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {link.label}
+                    {CATEGORY_META[cat]?.label || cat}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Company */}
+          {/* More Categories */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">Platform</h3>
+            <h3 className="text-sm font-semibold mb-4">More</h3>
+            <ul className="space-y-2">
+              {newsCategories.slice(6).map((cat) => (
+                <li key={cat}>
+                  <button
+                    onClick={() => setCategory(cat)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {CATEGORY_META[cat]?.label || cat}
+                  </button>
+                </li>
+              ))}
+              {sportCategories.map((cat) => (
+                <li key={cat}>
+                  <button
+                    onClick={() => setCategory(cat)}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {CATEGORY_META[cat]?.label || cat}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Info */}
+          <div>
+            <h3 className="text-sm font-semibold mb-4">About</h3>
             <ul className="space-y-2">
               <li>
                 <span className="text-sm text-muted-foreground">About</span>
@@ -74,27 +96,8 @@ export function Footer() {
                 <span className="text-sm text-muted-foreground">Terms of Service</span>
               </li>
             </ul>
-          </div>
-
-          {/* Stay Connected */}
-          <div>
-            <h3 className="text-sm font-semibold mb-4">Connect</h3>
-            <div className="flex gap-3">
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <Github className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
             <p className="text-xs text-muted-foreground mt-4">
-              Powered by real-time web search technology
+              Powered by BBC RSS feeds
             </p>
           </div>
         </div>
@@ -102,10 +105,10 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} PulseNews. All rights reserved.
+            &copy; {new Date().getFullYear()} BBC News Pulse. All content belongs to BBC.
           </p>
           <p className="text-xs text-muted-foreground">
-            Real-time news aggregation from trusted sources
+            News sourced from BBC RSS feeds
           </p>
         </div>
       </div>

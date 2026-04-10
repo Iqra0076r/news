@@ -6,13 +6,13 @@ import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/components/news/hero-section";
 import { CategoryTabs } from "@/components/news/category-tabs";
 import { CategorySection, TrendingSidebar } from "@/components/news/category-section";
+import { CategorySectionHeader } from "@/components/news/category-tabs";
 import { SearchResults } from "@/components/news/search-results";
 import { CategoryView } from "@/components/news/category-view";
 import { ArticleDetail } from "@/components/news/article-detail";
 import { BookmarksView } from "@/components/bookmarks/bookmarks-view";
 import { useAppStore } from "@/store/news-store";
 import { Separator } from "@/components/ui/separator";
-import { ChevronRight } from "lucide-react";
 
 export default function Home() {
   const { currentView, selectedArticle } = useAppStore();
@@ -91,7 +91,7 @@ export default function Home() {
                 exit="exit"
                 transition={{ duration: 0.3 }}
               >
-                {/* Hero */}
+                {/* Hero - Top Stories */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 pb-8">
                   <HeroSection />
                 </div>
@@ -101,22 +101,19 @@ export default function Home() {
                   <CategoryTabs />
                 </div>
 
-                {/* Trending + Technology Section */}
+                {/* World + Trending */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-10">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Featured News */}
                     <div className="lg:col-span-2">
-                      <SectionHeader title="Technology" category="technology" />
+                      <CategorySectionHeader category="world" title="World" />
                       <div className="mt-4">
-                        <CategorySection category="technology" limit={6} variant="grid" delay={800} />
+                        <CategorySection category="world" limit={6} variant="grid" delay={800} />
                       </div>
                     </div>
-
-                    {/* Trending Sidebar */}
                     <div className="lg:col-span-1">
-                      <div className="sticky top-20">
-                        <SectionHeader title="Trending Now" />
-                        <div className="mt-4 bg-card rounded-2xl border border-border/50 p-4">
+                      <div className="sticky top-36">
+                        <h2 className="text-lg font-bold mb-4">Most Read</h2>
+                        <div className="bg-card rounded-xl border border-border/50 p-4">
                           <TrendingSidebar />
                         </div>
                       </div>
@@ -126,29 +123,19 @@ export default function Home() {
 
                 <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
 
-                {/* World News */}
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
-                  <SectionHeader title="World" category="world" />
-                  <div className="mt-4">
-                    <CategorySection category="world" limit={4} variant="list" delay={1500} />
-                  </div>
-                </div>
-
-                <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
-
-                {/* Business + Sports */}
+                {/* Business + Technology */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
-                      <SectionHeader title="Business" category="business" />
+                      <CategorySectionHeader category="business" title="Business" />
                       <div className="mt-4">
-                        <CategorySection category="business" limit={3} variant="grid" delay={2500} />
+                        <CategorySection category="business" limit={3} variant="grid" delay={1500} />
                       </div>
                     </div>
                     <div>
-                      <SectionHeader title="Sports" category="sports" />
+                      <CategorySectionHeader category="technology" title="Technology" />
                       <div className="mt-4">
-                        <CategorySection category="sports" limit={3} variant="grid" delay={3500} />
+                        <CategorySection category="technology" limit={3} variant="grid" delay={2500} />
                       </div>
                     </div>
                   </div>
@@ -156,19 +143,19 @@ export default function Home() {
 
                 <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
 
-                {/* Health + Entertainment */}
+                {/* Sport + Entertainment */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
-                      <SectionHeader title="Health" category="health" />
+                      <CategorySectionHeader category="sport" title="Sport" />
                       <div className="mt-4">
-                        <CategorySection category="health" limit={3} variant="grid" delay={4500} />
+                        <CategorySection category="sport" limit={3} variant="grid" delay={3500} />
                       </div>
                     </div>
                     <div>
-                      <SectionHeader title="Entertainment" category="entertainment" />
+                      <CategorySectionHeader category="entertainment" title="Entertainment & Arts" />
                       <div className="mt-4">
-                        <CategorySection category="entertainment" limit={3} variant="grid" delay={5500} />
+                        <CategorySection category="entertainment" limit={3} variant="grid" delay={4500} />
                       </div>
                     </div>
                   </div>
@@ -176,11 +163,11 @@ export default function Home() {
 
                 <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
 
-                {/* Science */}
+                {/* Science & Environment */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
-                  <SectionHeader title="Science" category="science" />
+                  <CategorySectionHeader category="science" title="Science & Environment" />
                   <div className="mt-4">
-                    <CategorySection category="science" limit={4} variant="grid" delay={6500} />
+                    <CategorySection category="science" limit={4} variant="grid" delay={5500} />
                   </div>
                 </div>
 
@@ -192,33 +179,8 @@ export default function Home() {
         </main>
       )}
 
-      {/* Footer - only show on non-article views */}
+      {/* Footer */}
       {currentView !== "article" && <Footer />}
-    </div>
-  );
-}
-
-function SectionHeader({
-  title,
-  category,
-}: {
-  title: string;
-  category?: string;
-}) {
-  const { setCategory } = useAppStore();
-
-  return (
-    <div className="flex items-center justify-between">
-      <h2 className="text-xl font-bold">{title}</h2>
-      {category && (
-        <button
-          onClick={() => setCategory(category as "world" | "technology" | "business" | "sports" | "health" | "entertainment" | "science")}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors group"
-        >
-          See all
-          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-        </button>
-      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       currentView: "home" as AppView,
       selectedArticle: null,
-      selectedCategory: "general" as Category,
+      selectedCategory: "top-stories" as Category,
       searchQuery: "",
       bookmarks: [] as string[],
       isLoading: false,
@@ -51,16 +51,14 @@ export const useAppStore = create<AppState>()(
       },
 
       setLoading: (loading: boolean) => set({ isLoading: loading }),
-
       setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
       setMobileMenuOpen: (open: boolean) => set({ mobileMenuOpen: open }),
-
       clearArticle: () => {
         set({ selectedArticle: null });
       },
     }),
     {
-      name: "news-app-storage",
+      name: "bbc-news-storage",
       partialize: (state) => ({
         bookmarks: state.bookmarks,
       }),

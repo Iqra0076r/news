@@ -13,19 +13,22 @@ import {
   Loader2,
   AlertCircle,
   Newspaper,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppStore } from "@/store/news-store";
-import { formatFullDate, getDomainFromUrl, generatePlaceholderGradient } from "@/lib/helpers";
+import { formatFullDate, generatePlaceholderGradient } from "@/lib/helpers";
 import { cn } from "@/lib/utils";
+import type { NewsArticle } from "@/types/news";
 
 interface ArticleContent {
   title: string;
   html: string;
   image: string | null;
   publishedTime: string | null;
+  author: string | null;
 }
 
 export function ArticleDetail() {
@@ -39,20 +42,8 @@ export function ArticleDetail() {
     requestAnimationFrame(() => setMounted(true));
   }, []);
 
-  // Fetch full article content
   const fetchContent = useCallback(async () => {
     if (!selectedArticle) return;
-
-    // If we already have full content from the list fetch, use it
-    if (selectedArticle.content && selectedArticle.content.includes("<") && selectedArticle.content.length > 200) {
-      setContent({
-        title: selectedArticle.title,
-        html: selectedArticle.content,
-        image: selectedArticle.image,
-        publishedTime: selectedArticle.publishedAt,
-      });
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -69,6 +60,7 @@ export function ArticleDetail() {
           html: data.html || "",
           image: data.image || selectedArticle.image,
           publishedTime: data.publishedTime || selectedArticle.publishedAt,
+          author: data.author || null,
         });
       } else {
         setError(data.error || "Failed to load article content");
@@ -111,6 +103,29 @@ export function ArticleDetail() {
     }
   };
 
+  const handleBookmark = () => {
+    if (!selectedArticle) return;
+    // Save article data to localStorage
+    try {
+      const saved = localStorage.getItem("pulse-news-bookmarks-data");
+      const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
+      const bookmarked = isBookmarked(selectedArticle.id);
+      if (bookmarked) {
+        const filtered = existing.filter((a) => a.id !== selectedArticle.id);
+        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+      } else {
+        const exists = existing.find((a) => a.id === selectedArticle.id);
+        if (!exists) {
+          existing.push(selectedArticle);
+          localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(existing));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    toggleBookmark(selectedArticle.id);
+  };
+
   const handleRetry = () => {
     fetchContent();
   };
@@ -121,6 +136,7 @@ export function ArticleDetail() {
   const displayImage = content?.image || selectedArticle.image;
   const displayTitle = content?.title || selectedArticle.title;
   const displayDate = content?.publishedTime || selectedArticle.publishedAt;
+  const displayAuthor = content?.author;
   const gradientClass = generatePlaceholderGradient(selectedArticle.category);
 
   return (
@@ -136,7 +152,7 @@ export function ArticleDetail() {
         <div className="sticky top-0 z-10">
           <div className="glass border-b border-border/30">
             <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 rounded-xl">
+              <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 rounded-lg">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="text-sm">Back</span>
               </Button>
@@ -144,16 +160,16 @@ export function ArticleDetail() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-xl"
-                  onClick={() => toggleBookmark(selectedArticle.id)}
+                  className="rounded-lg"
+                  onClick={handleBookmark}
                 >
                   {bookmarked ? (
-                    <BookmarkCheck className="h-5 w-5 text-primary" />
+                    <BookmarkCheck className="h-5 w-5 text-red-600 dark:text-red-400" />
                   ) : (
                     <Bookmark className="h-5 w-5" />
                   )}
                 </Button>
-                <Button variant="ghost" size="icon" className="rounded-xl" onClick={handleShare}>
+                <Button variant="ghost" size="icon" className="rounded-lg" onClick={handleShare}>
                   <Share2 className="h-5 w-5" />
                 </Button>
               </div>
@@ -162,8 +178,8 @@ export function ArticleDetail() {
         </div>
 
         {/* Hero Image */}
-        <div className="relative w-full aspect-[16/9] max-h-[60vh] overflow-hidden bg-muted">
-          {displayImage ? (
+        {displayImage && (
+          <div className="relative w-full aspect-[16/9] max-h-[50vh] overflow-hidden bg-muted">
             <Image
               src={displayImage}
               alt={displayTitle}
@@ -173,23 +189,21 @@ export function ArticleDetail() {
               priority
               unoptimized
             />
-          ) : (
-            <div className={cn("w-full h-full bg-gradient-to-br", gradientClass)} />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-        </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          </div>
+        )}
 
         {/* Article Content */}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 -mt-20 relative z-[1]">
-          <article className="bg-card border border-border/50 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-xl">
+        <div className={cn("mx-auto max-w-3xl px-4 sm:px-6 relative z-[1]", displayImage ? "-mt-20" : "pt-6")}>
+          <article className="bg-card border border-border/50 rounded-xl p-6 sm:p-8 lg:p-10 shadow-xl">
             {/* Category & Source */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Badge className="text-xs font-medium">
-                {selectedArticle.category.charAt(0).toUpperCase() + selectedArticle.category.slice(1)}
+              <Badge className="bg-red-600 text-white border-0 text-xs font-medium capitalize">
+                {selectedArticle.category.replace(/-/g, " ")}
               </Badge>
               <Badge variant="secondary" className="text-xs gap-1">
                 <Newspaper className="h-3 w-3" />
-                Al Jazeera
+                BBC News
               </Badge>
             </div>
 
@@ -200,17 +214,19 @@ export function ArticleDetail() {
 
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
+              {displayAuthor && (
+                <span className="flex items-center gap-1.5">
+                  <User className="h-4 w-4" />
+                  {displayAuthor}
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
                 {formatFullDate(displayDate)}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                Source: aljazeera.com
-              </span>
             </div>
 
-            {/* Description (always visible from search data) */}
+            {/* Description from RSS */}
             {selectedArticle.description && (
               <p className="text-lg font-medium leading-relaxed text-foreground/90 mb-6 border-b border-border/50 pb-6">
                 {selectedArticle.description}
@@ -239,7 +255,7 @@ export function ArticleDetail() {
               <div className="flex flex-col items-center py-8 text-center">
                 <AlertCircle className="h-10 w-10 text-destructive mb-3" />
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button variant="outline" size="sm" onClick={handleRetry} className="rounded-xl gap-2">
+                <Button variant="outline" size="sm" onClick={handleRetry} className="rounded-lg gap-2">
                   Retry
                 </Button>
               </div>
@@ -254,8 +270,8 @@ export function ArticleDetail() {
                   prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
                   prose-p:text-base prose-p:leading-relaxed prose-p:mb-4
                   prose-img:rounded-xl prose-img:my-6 prose-img:mx-auto prose-img:max-w-full
-                  prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                  prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4
+                  prose-a:text-red-600 dark:prose-a:text-red-400 prose-a:no-underline hover:prose-a:underline
+                  prose-blockquote:border-l-red-600 dark:prose-blockquote:border-l-red-400 prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4
                   prose-ul:my-4 prose-ol:my-4 prose-li:mb-1
                   prose-strong:text-foreground
                   prose-figure:my-6
@@ -269,10 +285,10 @@ export function ArticleDetail() {
               <Button
                 variant="outline"
                 className={cn(
-                  "gap-2 rounded-xl w-full sm:w-auto",
-                  bookmarked && "border-primary/50 text-primary"
+                  "gap-2 rounded-lg w-full sm:w-auto",
+                  bookmarked && "border-red-600/50 text-red-600 dark:text-red-400"
                 )}
-                onClick={() => toggleBookmark(selectedArticle.id)}
+                onClick={handleBookmark}
               >
                 {bookmarked ? (
                   <>
@@ -289,9 +305,9 @@ export function ArticleDetail() {
             </div>
 
             {/* Source attribution */}
-            <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border/30">
+            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/30">
               <p className="text-xs text-muted-foreground">
-                Source: <span className="font-medium text-foreground">Al Jazeera</span> — This article content is fetched from Al Jazeera for reading convenience. All content belongs to its original publisher.
+                Source: <span className="font-medium text-foreground">BBC News</span> — This article content is fetched from BBC for reading convenience. All content belongs to its original publisher.
               </p>
             </div>
           </article>

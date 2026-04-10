@@ -7,18 +7,8 @@ import { Button } from "@/components/ui/button";
 import { NewsCard } from "@/components/news/news-card";
 import { GridSkeleton } from "@/components/news/skeleton-cards";
 import { useAppStore } from "@/store/news-store";
+import { CATEGORY_META } from "@/types/news";
 import type { NewsArticle, Category } from "@/types/news";
-
-const categoryLabels: Record<Category, string> = {
-  general: "Top Stories",
-  world: "World News",
-  technology: "Technology",
-  business: "Business",
-  sports: "Sports",
-  health: "Health",
-  entertainment: "Entertainment",
-  science: "Science",
-};
 
 export function CategoryView() {
   const { selectedCategory } = useAppStore();
@@ -32,7 +22,7 @@ export function CategoryView() {
 
     try {
       const res = await fetch(
-        `/api/news/category?category=${encodeURIComponent(selectedCategory)}`
+        `/api/news/rss?category=${encodeURIComponent(selectedCategory)}`
       );
       const data = await res.json();
       if (data.success) {
@@ -50,27 +40,28 @@ export function CategoryView() {
     fetchCategoryNews();
   }, [selectedCategory]);
 
+  const meta = CATEGORY_META[selectedCategory as Category];
+  const label = meta?.label || selectedCategory;
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/10 text-red-600 dark:text-red-400">
             <TrendingUp className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">
-              {categoryLabels[selectedCategory]}
-            </h1>
+            <h1 className="text-xl font-bold">{label}</h1>
             <p className="text-sm text-muted-foreground">
-              {loading ? "Loading..." : `${articles.length} articles`}
+              {loading ? "Loading..." : `${articles.length} articles from BBC`}
             </p>
           </div>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 rounded-xl"
+          className="gap-2 rounded-lg"
           onClick={() => fetchCategoryNews(true)}
           disabled={refreshing}
         >
@@ -98,7 +89,7 @@ export function CategoryView() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center justify-center py-20 text-center"
         >
-          <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center mb-4">
             <TrendingUp className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold mb-2">No articles found</h3>

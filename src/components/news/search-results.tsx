@@ -22,7 +22,6 @@ export function SearchResults() {
       return;
     }
 
-    // Cancel previous request
     if (abortRef.current) {
       abortRef.current.abort();
     }
@@ -62,11 +61,11 @@ export function SearchResults() {
     <div>
       {/* Search Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/10 text-red-600 dark:text-red-400">
           <Search className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-xl font-bold">Search Results</h1>
+          <h1 className="text-xl font-bold">Search BBC News</h1>
           <p className="text-sm text-muted-foreground">
             {loading ? (
               <span className="flex items-center gap-1">
@@ -78,7 +77,7 @@ export function SearchResults() {
                 {articles.length} result{articles.length !== 1 ? "s" : ""} for &quot;{searchQuery}&quot;
               </>
             ) : (
-              "Type to search for news"
+              "Type to search BBC News articles"
             )}
           </p>
         </div>
@@ -103,12 +102,12 @@ export function SearchResults() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center justify-center py-20 text-center"
         >
-          <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center mb-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold mb-2">No results found</h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            We couldn&apos;t find any news matching &quot;{searchQuery}&quot;. Try different keywords or browse categories.
+            We couldn&apos;t find any BBC News articles matching &quot;{searchQuery}&quot;. Try different keywords or browse categories.
           </p>
         </motion.div>
       )}

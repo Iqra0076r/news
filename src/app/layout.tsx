@@ -15,27 +15,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pulse News — Global News Aggregator",
+  title: "BBC News Pulse — Live News from BBC",
   description:
-    "Premium real-time news aggregation. Stay informed with breaking headlines, in-depth analysis, and stories from trusted sources worldwide.",
+    "Real-time news from BBC RSS feeds. Stay informed with breaking headlines, world news, business, technology, science, sport, and entertainment stories from BBC.",
   keywords: [
-    "news",
+    "BBC News",
     "breaking news",
     "world news",
+    "UK news",
     "technology",
     "business",
-    "sports",
-    "health",
-    "entertainment",
+    "sport",
     "science",
+    "entertainment",
+    "Asia news",
+    "Middle East news",
+    "Africa news",
   ],
-  authors: [{ name: "Pulse News" }],
+  authors: [{ name: "BBC News Pulse" }],
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>",
   },
   openGraph: {
-    title: "Pulse News",
-    description: "Your premium source for real-time global news",
+    title: "BBC News Pulse",
+    description: "Your source for real-time BBC news",
     type: "website",
   },
 };

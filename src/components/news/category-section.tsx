@@ -46,7 +46,7 @@ export function CategorySection({
 
   const fetchNews = useCallback(async () => {
     try {
-      const res = await fetch(`/api/news/category?category=${category}`);
+      const res = await fetch(`/api/news/rss?category=${category}`);
       const data = await res.json();
       if (data.success) {
         setArticles(data.articles.slice(0, limit));
@@ -104,10 +104,9 @@ export function TrendingSidebar() {
 
   useEffect(() => {
     async function fetchTrending() {
-      // Use a small delay to let the hero load first
       await new Promise((r) => setTimeout(r, 500));
       try {
-        const res = await fetch("/api/news?category=general");
+        const res = await fetch("/api/news/rss?category=top-stories");
         const data = await res.json();
         if (data.success) {
           setArticles(data.articles.slice(0, 8));

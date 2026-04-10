@@ -11,7 +11,7 @@ function extractFirstImage(html: string): string | null {
   return null;
 }
 
-const cache = new Map<string, { data: { title: string; html: string; image: string | null; publishedTime: string | null }; timestamp: number }>();
+const cache = new Map<string, { data: { title: string; html: string; image: string | null; publishedTime: string | null; author: string | null }; timestamp: number }>();
 const CACHE_MS = 30 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "URL parameter is required" }, { status: 400 });
     }
 
-    // Only allow Al Jazeera URLs
-    if (!url.includes("aljazeera.com")) {
-      return NextResponse.json({ success: false, error: "Only Al Jazeera articles are supported" }, { status: 400 });
+    // Only allow BBC URLs
+    if (!url.includes("bbc.co.uk") && !url.includes("bbc.com")) {
+      return NextResponse.json({ success: false, error: "Only BBC articles are supported" }, { status: 400 });
     }
 
     // Check cache
@@ -47,17 +47,20 @@ export async function GET(request: NextRequest) {
     const image = extractFirstImage(rawHtml);
     const publishedTime = data.publishedTime || null;
 
+    // Extract author if available
+    let author: string | null = null;
+    const authorMatch = rawHtml.match(/<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i);
+    if (authorMatch) author = authorMatch[1];
+
     // Clean HTML: remove scripts, styles, navigation, ads
-    let html = rawHtml
+    const html = rawHtml
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-      .replace(/<footer[\s\S]*?<\/footer>/gi, "")
       .replace(/<!--[\s\S]*?-->/g, "")
       .trim();
 
     // Store in cache
-    const responseData = { title, html, image, publishedTime };
+    const responseData = { title, html, image, publishedTime, author };
     cache.set(url, { data: responseData, timestamp: Date.now() });
 
     return NextResponse.json({ success: true, ...responseData });

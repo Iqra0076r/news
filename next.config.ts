@@ -22,7 +22,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "www.aljazeera.com",
+        hostname: "*.bbc.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "ichef.bbci.co.uk",
       },
       {
         protocol: "https",
@@ -30,7 +34,27 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.twimg.com",
+        hostname: "news.files.bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "mfiles.bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "www.bbc.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "*.bbci.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "*.bbc.com",
       },
     ],
   },

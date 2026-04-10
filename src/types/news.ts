@@ -21,14 +21,19 @@ export interface NewsResponse {
 }
 
 export type Category =
-  | "general"
+  | "top-stories"
   | "world"
-  | "technology"
+  | "uk"
+  | "asia"
+  | "middle-east"
+  | "africa"
   | "business"
-  | "sports"
-  | "health"
-  | "entertainment"
-  | "science";
+  | "technology"
+  | "science"
+  | "sport"
+  | "football"
+  | "cricket"
+  | "entertainment";
 
 export type AppView = "home" | "search" | "category" | "article" | "bookmarks";
 
@@ -54,24 +59,53 @@ export interface AppState {
   clearArticle: () => void;
 }
 
-export const CATEGORIES: { value: Category; label: string; icon: string }[] = [
-  { value: "general", label: "Top Stories", icon: "Newspaper" },
-  { value: "world", label: "World", icon: "Globe" },
-  { value: "technology", label: "Technology", icon: "Cpu" },
-  { value: "business", label: "Business", icon: "TrendingUp" },
-  { value: "sports", label: "Sports", icon: "Trophy" },
-  { value: "health", label: "Health", icon: "Heart" },
-  { value: "entertainment", label: "Entertainment", icon: "Film" },
-  { value: "science", label: "Science", icon: "Atom" },
+export const RSS_FEEDS: Record<Category, string> = {
+  "top-stories": "http://feeds.bbci.co.uk/news/rss.xml",
+  world: "http://feeds.bbci.co.uk/news/world/rss.xml",
+  uk: "http://feeds.bbci.co.uk/news/uk/rss.xml",
+  asia: "http://feeds.bbci.co.uk/news/world/asia/rss.xml",
+  "middle-east": "http://feeds.bbci.co.uk/news/world/middle_east/rss.xml",
+  africa: "http://feeds.bbci.co.uk/news/world/africa/rss.xml",
+  business: "http://feeds.bbci.co.uk/news/business/rss.xml",
+  technology: "http://feeds.bbci.co.uk/news/technology/rss.xml",
+  science: "http://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+  sport: "http://feeds.bbci.co.uk/sport/rss.xml",
+  football: "http://feeds.bbci.co.uk/sport/football/rss.xml",
+  cricket: "http://feeds.bbci.co.uk/sport/cricket/rss.xml",
+  entertainment: "http://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
+};
+
+export const CATEGORY_META: Record<Category, { label: string; section: string }> = {
+  "top-stories": { label: "Top Stories", section: "news" },
+  world: { label: "World", section: "news" },
+  uk: { label: "UK", section: "news" },
+  asia: { label: "Asia", section: "news" },
+  "middle-east": { label: "Middle East", section: "news" },
+  africa: { label: "Africa", section: "news" },
+  business: { label: "Business", section: "news" },
+  technology: { label: "Technology", section: "news" },
+  science: { label: "Science & Environment", section: "news" },
+  sport: { label: "Sport", section: "sport" },
+  football: { label: "Football", section: "sport" },
+  cricket: { label: "Cricket", section: "sport" },
+  entertainment: { label: "Entertainment & Arts", section: "entertainment" },
+};
+
+export const NEWS_CATEGORIES: Category[] = [
+  "top-stories",
+  "world",
+  "uk",
+  "asia",
+  "middle-east",
+  "africa",
+  "business",
+  "technology",
+  "science",
+  "entertainment",
 ];
 
-export const CATEGORY_QUERIES: Record<Category, string> = {
-  general: "breaking news today latest headlines",
-  world: "world news international today",
-  technology: "technology news latest today",
-  business: "business news finance economy today",
-  sports: "sports news latest today",
-  health: "health news medical breakthroughs today",
-  entertainment: "entertainment news movies music today",
-  science: "science news space discovery today",
-};
+export const SPORT_CATEGORIES: Category[] = [
+  "sport",
+  "football",
+  "cricket",
+];
