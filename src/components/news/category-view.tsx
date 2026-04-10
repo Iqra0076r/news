@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,19 +10,22 @@ import { useAppStore } from "@/store/news-store";
 import { CATEGORY_META } from "@/types/news";
 import type { NewsArticle, Category } from "@/types/news";
 
+const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
 export function CategoryView() {
   const { selectedCategory } = useAppStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchCategoryNews = async (showRefresh = false) => {
-    if (showRefresh) setRefreshing(true);
+  const fetchCategoryNews = useCallback(async (nocache = false) => {
+    if (nocache) setRefreshing(true);
     else setLoading(true);
 
     try {
+      const cacheParam = nocache ? "&nocache=true" : "";
       const res = await fetch(
-        `/api/news/rss?category=${encodeURIComponent(selectedCategory)}`
+        `/api/news/rss?category=${encodeURIComponent(selectedCategory)}${cacheParam}`
       );
       const data = await res.json();
       if (data.success) {
@@ -34,11 +37,20 @@ export function CategoryView() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCategoryNews();
   }, [selectedCategory]);
+
+  // Initial fetch when category changes
+  useEffect(() => {
+    fetchCategoryNews(false);
+  }, [fetchCategoryNews]);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchCategoryNews(true);
+    }, REFRESH_INTERVAL);
+    return () => clearInterval(timer);
+  }, [fetchCategoryNews]);
 
   const meta = CATEGORY_META[selectedCategory as Category];
   const label = meta?.label || selectedCategory;

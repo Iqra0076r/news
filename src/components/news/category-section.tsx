@@ -16,6 +16,8 @@ interface CategorySectionProps {
   delay?: number;
 }
 
+const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
 export function CategorySection({
   category,
   limit = 4,
@@ -58,11 +60,21 @@ export function CategorySection({
     }
   }, [category, limit]);
 
+  // Initial fetch (with delay for lazy loading)
   useEffect(() => {
     if (!inView) return;
     const timer = setTimeout(fetchNews, delay);
     return () => clearTimeout(timer);
   }, [fetchNews, inView, delay]);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    if (!inView) return;
+    const timer = setInterval(() => {
+      fetchNews();
+    }, REFRESH_INTERVAL);
+    return () => clearInterval(timer);
+  }, [fetchNews, inView]);
 
   return (
     <section ref={sectionRef} className="animate-fade-in">
@@ -102,23 +114,31 @@ export function TrendingSidebar() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchTrending() {
-      await new Promise((r) => setTimeout(r, 500));
-      try {
-        const res = await fetch("/api/news/rss?category=top-stories");
-        const data = await res.json();
-        if (data.success) {
-          setArticles(data.articles.slice(0, 8));
-        }
-      } catch {
-        console.error("Failed to fetch trending");
-      } finally {
-        setLoading(false);
+  const fetchTrending = useCallback(async () => {
+    try {
+      const res = await fetch("/api/news/rss?category=top-stories");
+      const data = await res.json();
+      if (data.success) {
+        setArticles(data.articles.slice(0, 8));
       }
+    } catch {
+      console.error("Failed to fetch trending");
+    } finally {
+      setLoading(false);
     }
-    fetchTrending();
   }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    const timer = setTimeout(fetchTrending, 500);
+    return () => clearTimeout(timer);
+  }, [fetchTrending]);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    const timer = setInterval(fetchTrending, REFRESH_INTERVAL);
+    return () => clearInterval(timer);
+  }, [fetchTrending]);
 
   if (loading) {
     return (

@@ -96,3 +96,33 @@ Stage Summary:
 - Stunning full-width HD hero with crossfade animations and progress bar
 - Top stories only shows main/headline news (filtered out sports, tech, business, science, entertainment)
 - Clean lint, all API routes returning 200, dev server compiling without errors
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix HD images in hero, add 10-minute auto-refresh, newest-first sorting, hot news in hero
+
+Work Log:
+- Analyzed BBC RSS feed image URL patterns: discovered `/ace/standard/{width}/` format (not `/news/{width}/`)
+- Updated `upgradeToHD()` function in RSS API route to handle 4 patterns: `/ace/standard/{width}/`, `/news/{width}/`, `/wwhp/{width}/`, and query params
+- Images now upgraded from 240px thumbnails to 1200px HD resolution
+- Added same HD upgrade to search API route
+- Added `nocache` query parameter support to RSS API (bypasses 10-min server cache)
+- Removed `next: { revalidate: 600 }` from RSS fetch, replaced with `cache: "no-store"` + `Cache-Control: no-cache`
+- Added newest-first sorting to RSS API (sort by publishedAt descending)
+- Updated hero section with:
+  - 10-minute auto-refresh timer (fetches with nocache=true)
+  - Smart merge on refresh: deduplicates by id, sorts newest first, shows new articles first
+  - Manual refresh button (top-right corner with RefreshCw icon, shows last update time)
+  - "Breaking" badge with Flame icon for articles published within last 3 hours
+- Updated CategorySection component with 10-minute auto-refresh timer
+- Updated TrendingSidebar component with 10-minute auto-refresh timer
+- Updated CategoryView component with 10-minute auto-refresh timer (also uses nocache on refresh)
+
+Stage Summary:
+- Hero section now displays 1200px HD images (upgraded from 240px thumbnails)
+- All sections auto-refresh every 10 minutes with newest articles shown first
+- Smart deduplication ensures no duplicate articles on refresh
+- Hero features "Breaking" indicator for hot/recent news (within 3 hours)
+- Manual refresh button available in hero and category views
+- Clean lint, all routes working, verified HD URLs via API test

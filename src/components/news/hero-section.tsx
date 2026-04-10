@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +10,8 @@ import {
   BookmarkCheck,
   ChevronLeft,
   ChevronRight,
+  Flame,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,36 +21,78 @@ import { HeroSkeleton } from "@/components/news/skeleton-cards";
 import type { NewsArticle } from "@/types/news";
 import { cn } from "@/lib/utils";
 
+const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const AUTO_ROTATE_INTERVAL = 6000; // 6 seconds
+
 export function HeroSection() {
   const { selectArticle, toggleBookmark, isBookmarked } = useAppStore();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval>>();
 
-  useEffect(() => {
-    async function fetchTopStories() {
-      try {
-        const res = await fetch("/api/news/rss?category=top-stories");
-        const data = await res.json();
-        if (data.success && data.articles.length > 0) {
-          // Only keep articles that have actual images
-          const withImages = data.articles.filter(
-            (a: NewsArticle) => a.image && a.image.length > 0
-          );
-          if (withImages.length > 0) {
-            setArticles(withImages.slice(0, 6));
-          }
+  const fetchTopStories = useCallback(async (useCache: boolean = true) => {
+    if (!useCache) setRefreshing(true);
+    try {
+      const cacheParam = useCache ? "" : "&nocache=true";
+      const res = await fetch(`/api/news/rss?category=top-stories${cacheParam}`);
+      const data = await res.json();
+      if (data.success && data.articles.length > 0) {
+        // Only keep articles that have actual images
+        const withImages = data.articles.filter(
+          (a: NewsArticle) => a.image && a.image.length > 0
+        );
+        if (withImages.length > 0) {
+          setArticles((prev) => {
+            // For refresh: merge new articles, deduplicate by id, sort newest first
+            if (!useCache && prev.length > 0) {
+              const mergedMap = new Map<string, NewsArticle>();
+              // Add new articles first (they take priority)
+              withImages.forEach((a: NewsArticle) => mergedMap.set(a.id, a));
+              // Add existing articles that aren't in the new set
+              prev.forEach((a) => {
+                if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
+              });
+              const merged = Array.from(mergedMap.values());
+              merged.sort(
+                (a, b) =>
+                  new Date(b.publishedAt).getTime() -
+                  new Date(a.publishedAt).getTime()
+              );
+              return merged.slice(0, 8);
+            }
+            return withImages.slice(0, 8);
+          });
+          setLastRefresh(Date.now());
         }
-      } catch (err) {
-        console.error("Failed to fetch top stories:", err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error("Failed to fetch top stories:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    fetchTopStories();
   }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTopStories(true);
+  }, [fetchTopStories]);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    refreshTimerRef.current = setInterval(() => {
+      fetchTopStories(false);
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
+  }, [fetchTopStories]);
 
   // Auto-rotate hero
   useEffect(() => {
@@ -56,9 +100,14 @@ export function HeroSection() {
     const interval = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % articles.length);
-    }, 6000);
+    }, AUTO_ROTATE_INTERVAL);
     return () => clearInterval(interval);
   }, [articles.length, isPaused]);
+
+  // Reset index when articles change significantly
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [articles.length > 0 ? articles[0]?.id : ""]);
 
   const goToSlide = useCallback(
     (index: number) => {
@@ -84,6 +133,9 @@ export function HeroSection() {
 
   const featured = articles[currentIndex];
   const bookmarked = isBookmarked(featured.id);
+
+  // Check if article is "hot" (published within last 3 hours)
+  const isHot = (Date.now() - new Date(featured.publishedAt).getTime()) < 3 * 60 * 60 * 1000;
 
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -181,6 +233,7 @@ export function HeroSection() {
               sizes="100vw"
               priority
               unoptimized
+              quality={90}
             />
           </motion.div>
         </AnimatePresence>
@@ -221,11 +274,19 @@ export function HeroSection() {
                 }}
                 className="max-w-3xl lg:max-w-4xl pointer-events-auto"
               >
-                {/* Category badge + Time */}
+                {/* Category badge + Hot indicator + Time */}
                 <div className="flex items-center gap-3 mb-3 sm:mb-4">
-                  <Badge className="bg-white/15 backdrop-blur-md text-white border-white/20 text-[10px] sm:text-xs font-semibold uppercase tracking-wider hover:bg-white/25 transition-colors">
-                    {featured.source}
-                  </Badge>
+                  {isHot && (
+                    <Badge className="bg-red-600 text-white border-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wider gap-1 animate-pulse">
+                      <Flame className="h-3 w-3" />
+                      Breaking
+                    </Badge>
+                  )}
+                  {!isHot && (
+                    <Badge className="bg-white/15 backdrop-blur-md text-white border-white/20 text-[10px] sm:text-xs font-semibold uppercase tracking-wider hover:bg-white/25 transition-colors">
+                      {featured.source}
+                    </Badge>
+                  )}
                   <span className="flex items-center gap-1.5 text-white/60 text-[11px] sm:text-xs font-medium">
                     <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     {formatTimeAgo(featured.publishedAt)}
@@ -278,6 +339,30 @@ export function HeroSection() {
           </div>
         </div>
 
+        {/* Refresh button - top right */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            fetchTopStories(false);
+          }}
+          disabled={refreshing}
+          className={cn(
+            "absolute top-4 right-4 sm:top-6 sm:right-6 z-30",
+            "w-9 h-9 sm:w-10 sm:h-10 rounded-full",
+            "bg-black/20 backdrop-blur-md border border-white/10",
+            "text-white/80 hover:text-white hover:bg-black/40 hover:border-white/30",
+            "flex items-center justify-center",
+            "transition-all duration-200 hover:scale-110 active:scale-95",
+            "shadow-lg shadow-black/20"
+          )}
+          aria-label="Refresh stories"
+          title={`Last updated: ${formatTimeAgo(new Date(lastRefresh).toISOString())}`}
+        >
+          <RefreshCw
+            className={cn("h-4 w-4", refreshing && "animate-spin")}
+          />
+        </button>
+
         {/* Navigation Arrows */}
         {articles.length > 1 && (
           <>
@@ -289,8 +374,7 @@ export function HeroSection() {
                 text-white/80 hover:text-white hover:bg-black/40 hover:border-white/30
                 flex items-center justify-center
                 transition-all duration-200 hover:scale-110 active:scale-95
-                opacity-0 group-hover:opacity-100 hover:opacity-100
-                focus:opacity-100 focus-visible:opacity-100
+                opacity-0 hover:opacity-100 focus:opacity-100
                 [opacity:0] hover:[opacity:1] focus:[opacity:1]
                 shadow-lg shadow-black/20"
               aria-label="Previous story"
@@ -342,7 +426,7 @@ export function HeroSection() {
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
                 exit={{ width: "100%" }}
-                transition={{ duration: 6, ease: "linear" }}
+                transition={{ duration: AUTO_ROTATE_INTERVAL / 1000, ease: "linear" }}
                 className="h-full bg-white/20"
               />
             </AnimatePresence>

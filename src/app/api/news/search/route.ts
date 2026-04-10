@@ -21,6 +21,40 @@ interface RSSItem {
   image: string | null;
 }
 
+/**
+ * Upgrade a BBC image URL to HD resolution (1200px wide).
+ */
+function upgradeToHD(url: string): string {
+  if (!url) return url;
+
+  let hd = url;
+
+  // Pattern 1: /ace/standard/{width}/ — BBC ace CDN
+  hd = hd.replace(
+    /\/ace\/standard\/\d{2,4}\//i,
+    "/ace/standard/1200/"
+  );
+
+  // Pattern 2: /news/{width}/ or /wwhp/{width}/ — older BBC CDN
+  hd = hd.replace(
+    /\/(news|wwhp)\/\d{2,4}\//i,
+    "/$1/1200/"
+  );
+
+  // Pattern 3: /news/{width}x{height}/ — replace with 1200x675
+  hd = hd.replace(
+    /\/(news|wwhp)\/\d{2,4}x\d{2,4}\//i,
+    "/$1/1200x675/"
+  );
+
+  // Pattern 4: query param like ?width=320
+  if (hd === url && url.includes("bbci.co.uk")) {
+    hd = url.replace(/[?&]width=\d+/i, "?width=1200");
+  }
+
+  return hd;
+}
+
 function parseRSSFeed(xml: string): RSSItem[] {
   const items: RSSItem[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
@@ -53,6 +87,11 @@ function parseRSSFeed(xml: string): RSSItem[] {
     if (!image) {
       const enclosureMatch = itemXml.match(/<enclosure[^>]*url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))["']/i);
       if (enclosureMatch) image = enclosureMatch[1];
+    }
+
+    // Upgrade to HD resolution
+    if (image) {
+      image = upgradeToHD(image);
     }
 
     if (title && link) {

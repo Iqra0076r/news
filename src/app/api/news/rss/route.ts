@@ -23,6 +23,48 @@ interface RSSItem {
   image: string | null;
 }
 
+/**
+ * Upgrade a BBC image URL to HD resolution.
+ * BBC RSS feeds typically return small thumbnails (240/320/480px).
+ * We rewrite the width segment to get full HD (1200px) images.
+ *
+ * Patterns handled:
+ *   https://ichef.bbci.co.uk/news/{width}/cpsprodpb/{hash}/image.jpg
+ *   https://ichef.bbci.co.uk/wwhp/{width}/cpsprodpb/{hash}/image.jpg
+ *   https://ichef.bbci.co.uk/news/{width}x{height}/cpsprodpb/{hash}/image.jpg
+ *   https://c.files.bbci.co.uk/{path} (rare, leave as-is)
+ */
+function upgradeToHD(url: string): string {
+  if (!url) return url;
+
+  let hd = url;
+
+  // Pattern 1: /ace/standard/{width}/ — BBC ace CDN, replace width with 1200
+  hd = hd.replace(
+    /\/ace\/standard\/\d{2,4}\//i,
+    "/ace/standard/1200/"
+  );
+
+  // Pattern 2: /news/{width}/ or /wwhp/{width}/ — older BBC CDN pattern
+  hd = hd.replace(
+    /\/(news|wwhp)\/\d{2,4}\//i,
+    "/$1/1200/"
+  );
+
+  // Pattern 3: /news/{width}x{height}/ — replace with 1200x675 (16:9 HD)
+  hd = hd.replace(
+    /\/(news|wwhp)\/\d{2,4}x\d{2,4}\//i,
+    "/$1/1200x675/"
+  );
+
+  // Pattern 4: query param like ?width=320
+  if (hd === url && url.includes("bbci.co.uk")) {
+    hd = url.replace(/[?&]width=\d+/i, "?width=1200");
+  }
+
+  return hd;
+}
+
 function parseRSSFeed(xml: string): RSSItem[] {
   const items: RSSItem[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
@@ -55,6 +97,11 @@ function parseRSSFeed(xml: string): RSSItem[] {
     if (!image) {
       const enclosureMatch = itemXml.match(/<enclosure[^>]*url=["']([^"']+\.(?:jpg|jpeg|png|webp|gif))["']/i);
       if (enclosureMatch) image = enclosureMatch[1];
+    }
+
+    // Upgrade to HD resolution
+    if (image) {
+      image = upgradeToHD(image);
     }
 
     if (title && link) {
@@ -114,7 +161,7 @@ function rssItemToArticle(item: RSSItem, feedCategory: string): NewsArticle {
 // ── Cache ────────────────────────────────────────────────────────
 
 const feedCache = new Map<string, { articles: NewsArticle[]; timestamp: number }>();
-const CACHE_DURATION = 10 * 60 * 1000;
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 // ── Main GET handler ─────────────────────────────────────────────
 
@@ -122,6 +169,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category") || "top-stories";
+    const nocache = searchParams.get("nocache") === "true";
 
     if (!RSS_FEEDS[category as keyof typeof RSS_FEEDS]) {
       return NextResponse.json(
@@ -130,27 +178,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const feedUrl = RSS_FEEDS[category as keyof typeof RSS_FEEDS];
-
-    // Check cache
-    const cached = feedCache.get(category);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json({
-        success: true,
-        articles: cached.articles,
-        totalResults: cached.articles.length,
-        category,
-        cached: true,
-      });
+    // Check cache (unless nocache requested)
+    if (!nocache) {
+      const cached = feedCache.get(category);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return NextResponse.json({
+          success: true,
+          articles: cached.articles,
+          totalResults: cached.articles.length,
+          category,
+          cached: true,
+        });
+      }
     }
+
+    const feedUrl = RSS_FEEDS[category as keyof typeof RSS_FEEDS];
 
     // Fetch RSS feed
     const response = await fetch(feedUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; SaveitBroNews/1.0)",
         Accept: "application/rss+xml, application/xml, text/xml, */*",
+        "Cache-Control": "no-cache",
       },
-      next: { revalidate: 600 },
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -173,10 +224,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const articles = items
+    let articles = items
       .map((item) => rssItemToArticle(item, category))
       .filter((a) => a.title.length > 10)
       .filter((a) => category !== "top-stories" || isTopStoryCandidate(a.url));
+
+    // Sort newest first by publishedAt
+    articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
     feedCache.set(category, { articles, timestamp: Date.now() });
 
@@ -185,6 +239,7 @@ export async function GET(request: NextRequest) {
       articles,
       totalResults: articles.length,
       category,
+      cached: false,
     });
   } catch (error) {
     console.error("RSS API error:", error);
