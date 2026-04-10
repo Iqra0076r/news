@@ -11,7 +11,6 @@ import { SearchResults } from "@/components/news/search-results";
 import { CategoryView } from "@/components/news/category-view";
 import { ArticleDetail } from "@/components/news/article-detail";
 import { BookmarksView } from "@/components/bookmarks/bookmarks-view";
-import { ContentsView } from "@/components/news/contents-view";
 import { useAppStore } from "@/store/news-store";
 import { Separator } from "@/components/ui/separator";
 
@@ -64,21 +63,6 @@ export default function Home() {
                 className="mx-auto max-w-4xl px-4 sm:px-6 py-6"
               >
                 <BookmarksView />
-              </motion.div>
-            )}
-
-            {/* CONTENTS VIEW */}
-            {currentView === "contents" && (
-              <motion.div
-                key="contents"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="mx-auto max-w-7xl px-4 sm:px-6 py-6"
-              >
-                <ContentsView />
               </motion.div>
             )}
 

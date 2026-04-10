@@ -35,7 +35,7 @@ export type Category =
   | "cricket"
   | "entertainment";
 
-export type AppView = "home" | "search" | "category" | "article" | "bookmarks" | "contents";
+export type AppView = "home" | "search" | "category" | "article" | "bookmarks";
 
 export interface AppState {
   currentView: AppView;
@@ -57,13 +57,6 @@ export interface AppState {
   setSidebarOpen: (open: boolean) => void;
   setMobileMenuOpen: (open: boolean) => void;
   clearArticle: () => void;
-}
-
-export interface ContentsSection {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
-  categories: { category: Category; label: string }[];
 }
 
 export const RSS_FEEDS: Record<Category, string> = {

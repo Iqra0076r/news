@@ -19,7 +19,6 @@ import {
   Theater,
   ChevronDown,
   ChevronRight,
-  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -219,22 +218,6 @@ export function Navbar() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setView("contents");
-                    setSearchValue("");
-                  }}
-                  className={cn(
-                    "gap-2 rounded-lg",
-                    currentView === "contents" && "bg-secondary font-medium"
-                  )}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Contents
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
                     setView("bookmarks");
                     setSearchValue("");
                   }}
@@ -277,17 +260,6 @@ export function Navbar() {
 
               {/* Mobile Actions */}
               <div className="flex lg:hidden items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-lg"
-                  onClick={() => {
-                    setView("contents");
-                    setSearchValue("");
-                  }}
-                >
-                  <BookOpen className="h-4 w-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -634,26 +606,6 @@ export function Navbar() {
                     {cat.label}
                   </button>
                 ))}
-              </div>
-
-              {/* Contents */}
-              <div className="border-t border-border/30 p-1">
-                <button
-                  onClick={() => {
-                    setView("contents");
-                    setSearchValue("");
-                    setMobileMenuOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                    currentView === "contents"
-                      ? "bg-muted font-medium"
-                      : "text-muted-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Contents
-                </button>
               </div>
 
               {/* Saved */}
