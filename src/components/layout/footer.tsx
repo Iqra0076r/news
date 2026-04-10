@@ -35,7 +35,7 @@ export function Footer() {
               </div>
               <div className="flex flex-col leading-none">
                 <span className="text-base font-bold tracking-tight">
-                  PulseNews
+                  SaveitBro News
                 </span>
                 <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
                   Live
@@ -122,7 +122,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} PulseNews. All content belongs to
+            &copy; {new Date().getFullYear()} SaveitBro News. All content belongs to
             its original publishers.
           </p>
           <p className="text-xs text-muted-foreground">

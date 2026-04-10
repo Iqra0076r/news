@@ -46,7 +46,7 @@ function ArticleImage({
     >
       <div className="text-white/80 text-center p-4">
         <p className="text-xs font-medium uppercase tracking-wider opacity-70">
-          PulseNews
+          SaveitBro
         </p>
       </div>
     </div>
@@ -64,12 +64,12 @@ export function NewsCard({
   const handleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const saved = localStorage.getItem("pulse-news-bookmarks-data");
+      const saved = localStorage.getItem("saveitbro-news-bookmarks-data");
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
       if (bookmarked) {
         const filtered = existing.filter((a) => a.id !== article.id);
         localStorage.setItem(
-          "pulse-news-bookmarks-data",
+          "saveitbro-news-bookmarks-data",
           JSON.stringify(filtered)
         );
       } else {
@@ -77,7 +77,7 @@ export function NewsCard({
         if (!exists) {
           existing.push(article);
           localStorage.setItem(
-            "pulse-news-bookmarks-data",
+            "saveitbro-news-bookmarks-data",
             JSON.stringify(existing)
           );
         }

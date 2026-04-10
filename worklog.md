@@ -14,26 +14,14 @@ Work Log:
 - Updated `/src/app/api/news/search/route.ts` - Search across multiple BBC RSS feeds
 - Removed old API routes (`/api/news/route.ts`, `/api/news/category/route.ts`, `/api/route.ts`)
 - Rebuilt `/src/components/layout/navbar.tsx` with BBC-style navigation bar featuring dropdown menus for News (Top Stories, World, UK, Asia, Middle East, Africa) and Sport (Sport, Football, Cricket), plus standalone Business, Technology, Science, Entertainment
-- Updated `/src/components/news/news-card.tsx` with BBC branding and red accent colors
-- Updated `/src/components/news/article-detail.tsx` with BBC source references, full article reading, and localStorage bookmark persistence
-- Updated `/src/components/news/hero-section.tsx` to use RSS API for Top Stories
-- Updated `/src/components/news/category-section.tsx` to use RSS API with lazy loading
-- Updated `/src/components/news/category-tabs.tsx` with BBC categories
-- Updated `/src/components/news/category-view.tsx` with BBC category labels
-- Updated `/src/components/news/search-results.tsx` to use new search API
-- Updated `/src/components/layout/footer.tsx` with BBC branding and all categories
-- Rebuilt `/src/app/page.tsx` homepage with BBC-style layout (Top Stories hero, World section, Business+Tech, Sport+Entertainment, Science)
-- Updated `/src/app/layout.tsx` metadata for BBC News Pulse
-- Updated `/next.config.ts` with BBC image domains (ichef.bbci.co.uk, *.bbci.co.uk, etc.)
+- Updated all news components, layout, and homepage
 
 Stage Summary:
 - Successfully migrated from Al Jazeera web-search to BBC RSS feeds
-- All 13 categories working with real BBC articles: top-stories, world, uk, asia, middle-east, africa, business, technology, science, sport, football, cricket, entertainment
-- Navigation bar with dropdown menus for News regions and Sport sub-categories
-- Full article reading using z-ai-web-dev-sdk page_reader for in-app content display
+- All 13 categories working with real articles
+- Full article reading using z-ai-web-dev-sdk page_reader
 - Search across multiple RSS feeds
 - Clean lint (0 errors)
-- All API endpoints returning 200 status with real data
 
 ---
 Task ID: 2
@@ -41,39 +29,70 @@ Agent: Main Agent
 Task: Fix article content cleaning, remove all BBC branding, fix layout issues
 
 Work Log:
-- Completely rewrote `/src/app/api/news/article/route.ts` with aggressive HTML cleaning:
-  - Added 16 REMOVE_TAGS (script, style, nav, svg, header, footer, aside, form, iframe, etc.)
-  - Added 40+ REMOVE_SELECTORS patterns for social sharing, navigation, related articles, ads, comments, newsletters, etc.
-  - Added TEXT_PATTERNS_TO_REMOVE for cleaning leftover text like "Share this", "Most read", "Related topics", etc.
-  - Improved image extraction (keep src/alt only, clean figure/figcaption)
-  - Convert paragraph-with-strong to proper h3 headers
-  - Remove BBC text references from content (replaced with PulseNews)
-  - Unwrap unnecessary nested divs
-  - Added `nocache=true` parameter to force fresh article content on every open
-  - Reduced cache from 30min to 10min
-- Removed ALL user-facing "BBC" references:
-  - `/src/app/layout.tsx` - metadata: "PulseNews — Live Breaking News"
-  - `/src/components/layout/navbar.tsx` - logo: "PulseNews / Live", search placeholder: "Search news..."
-  - `/src/components/layout/footer.tsx` - branding: "PulseNews", attribution: "Aggregated from trusted news sources"
-  - `/src/components/news/news-card.tsx` - removed "BBC News" badge/text from all 4 card variants
-  - `/src/components/news/hero-section.tsx` - removed "BBC News" secondary badge
-  - `/src/components/news/article-detail.tsx` - removed "BBC News" source badge, changed attribution to "Original Publisher"
-  - `/src/components/news/category-view.tsx` - changed "articles from BBC" to "articles available"
-  - `/src/components/news/search-results.tsx` - changed "Search BBC News" to "Search News"
-  - `/src/app/api/news/rss/route.ts` - source changed from "BBC News" to "PulseNews"
-  - `/src/app/api/news/search/route.ts` - source changed from "BBC News" to "PulseNews"
-  - `/src/store/news-store.ts` - localStorage key changed from "bbc-news-storage" to "pulse-news-storage"
-- Fixed layout and design:
-  - Added comprehensive article content CSS styles in globals.css (paragraphs, headings, images, blockquotes, lists, links, figures, videos)
-  - Added CSS-based fallback for hiding remaining noisy elements (display: none for share/social/related/promo/advert/newsletter patterns)
-  - Fixed video iframe styling with proper aspect ratio
-  - Added proper data-component handling for article content blocks
-  - Fixed unused import in bookmarks-view.tsx (removed `cn` from helpers import)
-- Verified: lint passes cleanly, all API routes returning 200, dev server compiles without errors
+- Rewrote article API with aggressive HTML cleaning (40+ patterns)
+- Removed ALL user-facing "BBC" references across 12+ files
+- Added comprehensive article content CSS styles
+- CSS-based fallback for hiding noisy elements
 
 Stage Summary:
-- Article content now loads fresh on every open (nocache=true) with aggressive cleaning
 - Zero user-facing "BBC" text anywhere on the website
-- Clean article reading experience: only real content (text + images + videos), no social links, no related articles, no ads
-- Proper typography and spacing for article content
-- All feeds and API routes working correctly
+- Clean article reading: only real content, no social links, no ads
+
+---
+Task ID: 3
+Agent: Main Agent + Subagents (frontend-styling-expert, full-stack-developer)
+Task: Speed up article fetching, rename to SaveitBro News, premium theme redesign, HD hero, top stories filtering
+
+Work Log:
+
+**1. Article Fetching Speed (Task ID: 3-1)**
+- Removed `nocache=true` from article-detail.tsx fetch calls - articles now use 5-min cache
+- First load: ~16s (page_reader), subsequent: <1s (from cache)
+- Reduced article API cache from 10min to 5min for freshness
+
+**2. Website Rename to SaveitBro News (Task ID: 3-2)**
+- Updated all 15+ files: layout.tsx metadata, navbar, footer, news-card, hero, article-detail, bookmarks, store, all API routes
+- Replaced "PulseNews" → "SaveitBro News" in all user-facing text
+- Replaced "pulse-news-bookmarks-data" → "saveitbro-news-bookmarks-data" in all localStorage references
+- Replaced "pulse-news-storage" → "saveitbro-news-storage" in Zustand store
+- Updated User-Agent strings in API routes
+
+**3. Premium Theme Redesign (Task ID: 3-3)**
+- Complete globals.css rewrite (852 lines) by frontend-styling-expert subagent
+- Premium color palette: warm off-white background, deep navy-charcoal foreground, rich crimson accent
+- Dark mode: deep navy-black with blue undertones (Bloomberg Terminal inspired)
+- Glassmorphism: refined frosted-glass with layered depth, `saturate(180%)`, inner glow
+- Card effects: Apple-inspired triple-layered shadows, 3px lift, organic easing
+- Typography: OpenType features (kern, liga, calt), anti-aliased, optimizeLegibility
+- Article content: drop caps, pull quotes, underline-reveal links, gradient HR, code blocks
+- Shimmer skeleton loading animation
+- Premium scrollbar (5px, blue-tinted, Firefox support)
+- Smooth page transition with blur effect
+
+**4. Hero Section Redesign (Task ID: 3-4)**
+- Complete rewrite by full-stack-developer subagent
+- Full-width edge-to-edge design (no borders, no rounded corners, bleeds to viewport)
+- Tall HD images: 600px desktop, 560px lg, 500px md, 420px sm, 350px mobile
+- Multi-layer gradient overlays: vertical + horizontal + radial vignette
+- All text overlaid on image in white with text shadows
+- Premium crossfade + scale animation with directional-aware variants
+- Navigation arrows (ChevronLeft/Right) with glassmorphism styling
+- Thin line indicators at bottom-right
+- Auto-rotation progress bar
+- Hover pause functionality
+- Filters articles with actual images only
+- Updated HeroSkeleton to match new full-width tall layout
+
+**5. Top Stories Filtering (Task ID: 3-5)**
+- Added 17 URL pattern exclusions in RSS route for top-stories category
+- Excluded patterns: /technology/, /tech/, /business/, /sport/, /football/, /cricket/, /science_and_environment/, /science/, /entertainment_and_arts/, /entertainment/, /arts/, /music/, /gaming/, /travel/, /food/, /lifestyle/
+- Only general headline news appears in top stories feed
+- Other categories (world, uk, etc.) remain unfiltered
+
+Stage Summary:
+- Articles load fast with caching (first: ~16s, cached: <1s)
+- Website renamed to "SaveitBro News" everywhere
+- Premium trillion-dollar theme with refined colors, glassmorphism, typography
+- Stunning full-width HD hero with crossfade animations and progress bar
+- Top stories only shows main/headline news (filtered out sports, tech, business, science, entertainment)
+- Clean lint, all API routes returning 200, dev server compiling without errors

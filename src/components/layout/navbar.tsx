@@ -173,7 +173,7 @@ export function Navbar() {
                 </div>
                 <div className="hidden sm:flex flex-col leading-none">
                   <span className="text-base font-bold tracking-tight">
-                    PulseNews
+                    SaveitBro News
                   </span>
                   <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
                     Live

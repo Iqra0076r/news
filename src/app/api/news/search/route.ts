@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       try {
         const res = await fetch(RSS_FEEDS[key], {
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; PulseNews/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; SaveitBroNews/1.0)",
             Accept: "application/rss+xml, application/xml, text/xml, */*",
           },
         });
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       content: "",
       url: item.link,
       image: item.image,
-      source: "PulseNews",
+      source: "SaveitBro News",
       sourceIcon: null,
       publishedAt: item.pubDate,
       category: item.feedCategory,

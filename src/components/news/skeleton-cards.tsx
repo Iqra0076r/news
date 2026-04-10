@@ -71,14 +71,28 @@ export function NewsCardSkeleton({ variant = "default" }: { variant?: "default" 
 
 export function HeroSkeleton() {
   return (
-    <div className="rounded-2xl overflow-hidden">
-      <Skeleton className="h-[300px] sm:h-[400px] md:h-[500px] w-full" />
-      <div className="p-6 flex flex-col gap-3 bg-card border-x border-b border-border/50 rounded-b-2xl">
-        <Skeleton className="h-5 w-24 rounded-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-4/5" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
+    <div className="relative w-full h-[350px] sm:h-[420px] md:h-[500px] lg:h-[560px] xl:h-[600px] overflow-hidden bg-neutral-900">
+      {/* Shimmer overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+      <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
+      {/* Text content skeleton at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 md:px-8 pb-8 sm:pb-10 md:pb-12 lg:pb-14">
+        <div className="max-w-3xl flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-5 w-20 rounded-full bg-white/10" />
+            <Skeleton className="h-4 w-16 bg-white/10" />
+          </div>
+          <Skeleton className="h-8 w-full bg-white/10 rounded" />
+          <Skeleton className="h-8 w-4/5 bg-white/10 rounded" />
+          <div className="hidden sm:block">
+            <Skeleton className="h-4 w-full bg-white/5 rounded" />
+            <Skeleton className="h-4 w-2/3 mt-2 bg-white/5 rounded" />
+          </div>
+          <div className="flex gap-3 mt-1">
+            <Skeleton className="h-9 w-28 rounded-full bg-white/10" />
+            <Skeleton className="h-9 w-9 rounded-full bg-white/10" />
+          </div>
+        </div>
       </div>
     </div>
   );

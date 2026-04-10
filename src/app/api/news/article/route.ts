@@ -16,7 +16,7 @@ const cache = new Map<
     timestamp: number;
   }
 >();
-const CACHE_MS = 10 * 60 * 1000; // 10 min cache for fresh content
+const CACHE_MS = 5 * 60 * 1000; // 5 min cache
 
 // ── Image extraction ─────────────────────────────────────────────
 
@@ -251,8 +251,8 @@ function cleanArticleHtml(rawHtml: string): string {
   }
 
   // 13. Remove leftover BBC text references from content
-  html = html.replace(/\bBBC\b/g, "PulseNews");
-  html = html.replace(/\bBritish Broadcasting Corporation\b/g, "PulseNews");
+  html = html.replace(/\bBBC\b/g, "SaveitBro News");
+  html = html.replace(/\bBritish Broadcasting Corporation\b/g, "SaveitBro News");
 
   // 14. Remove empty anchors
   html = html.replace(/<a[^>]*>\s*<\/a>/gi, "");

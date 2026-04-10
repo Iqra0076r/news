@@ -68,6 +68,33 @@ function parseRSSFeed(xml: string): RSSItem[] {
   return items;
 }
 
+// Category-specific URL patterns to EXCLUDE from top-stories
+// Only general headline news should appear in top stories
+const TOP_STORIES_EXCLUDE_PATTERNS = [
+  /\/technology\//i,
+  /\/tech\//i,
+  /\/business\//i,
+  /\/sport\//i,
+  /\/sports\//i,
+  /\/football\//i,
+  /\/cricket\//i,
+  /\/science_and_environment\//i,
+  /\/science\//i,
+  /\/entertainment_and_arts\//i,
+  /\/entertainment\//i,
+  /\/arts\//i,
+  /\/music\//i,
+  /\/gaming\//i,
+  /\/travel\//i,
+  /\/food\//i,
+  /\/lifestyle\//i,
+];
+
+function isTopStoryCandidate(url: string): boolean {
+  // Include the article if it does NOT match any category-specific pattern
+  return !TOP_STORIES_EXCLUDE_PATTERNS.some((pattern) => pattern.test(url));
+}
+
 function rssItemToArticle(item: RSSItem, feedCategory: string): NewsArticle {
   return {
     id: generateId(item.link),
@@ -76,7 +103,7 @@ function rssItemToArticle(item: RSSItem, feedCategory: string): NewsArticle {
     content: "",
     url: item.link,
     image: item.image,
-    source: "PulseNews",
+    source: "SaveitBro News",
     sourceIcon: null,
     publishedAt: item.pubDate,
     category: feedCategory,
@@ -120,7 +147,7 @@ export async function GET(request: NextRequest) {
     // Fetch RSS feed
     const response = await fetch(feedUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PulseNews/1.0)",
+        "User-Agent": "Mozilla/5.0 (compatible; SaveitBroNews/1.0)",
         Accept: "application/rss+xml, application/xml, text/xml, */*",
       },
       next: { revalidate: 600 },
@@ -148,7 +175,8 @@ export async function GET(request: NextRequest) {
 
     const articles = items
       .map((item) => rssItemToArticle(item, category))
-      .filter((a) => a.title.length > 10);
+      .filter((a) => a.title.length > 10)
+      .filter((a) => category !== "top-stories" || isTopStoryCandidate(a.url));
 
     feedCache.set(category, { articles, timestamp: Date.now() });
 

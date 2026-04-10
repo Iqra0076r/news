@@ -19,7 +19,7 @@ export function BookmarksView() {
   useEffect(() => {
     async function loadSavedArticles() {
       try {
-        const saved = localStorage.getItem("pulse-news-bookmarks-data");
+        const saved = localStorage.getItem("saveitbro-news-bookmarks-data");
         if (saved) {
           const parsed = JSON.parse(saved) as NewsArticle[];
           setSavedArticles(parsed.filter((a) => bookmarks.includes(a.id)));
@@ -37,11 +37,11 @@ export function BookmarksView() {
     toggleBookmark(articleId);
     // Also remove from localStorage data
     try {
-      const saved = localStorage.getItem("pulse-news-bookmarks-data");
+      const saved = localStorage.getItem("saveitbro-news-bookmarks-data");
       if (saved) {
         const parsed = JSON.parse(saved) as NewsArticle[];
         const filtered = parsed.filter((a) => a.id !== articleId);
-        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+        localStorage.setItem("saveitbro-news-bookmarks-data", JSON.stringify(filtered));
         setSavedArticles((prev) => prev.filter((a) => a.id !== articleId));
       }
     } catch {
@@ -158,17 +158,17 @@ export function useBookmarkPersistence() {
 
     // Save/remove article data in localStorage
     try {
-      const saved = localStorage.getItem("pulse-news-bookmarks-data");
+      const saved = localStorage.getItem("saveitbro-news-bookmarks-data");
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
 
       if (isCurrentlyBookmarked) {
         const filtered = existing.filter((a) => a.id !== article.id);
-        localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(filtered));
+        localStorage.setItem("saveitbro-news-bookmarks-data", JSON.stringify(filtered));
       } else {
         const exists = existing.find((a) => a.id === article.id);
         if (!exists) {
           existing.push(article);
-          localStorage.setItem("pulse-news-bookmarks-data", JSON.stringify(existing));
+          localStorage.setItem("saveitbro-news-bookmarks-data", JSON.stringify(existing));
         }
       }
     } catch {

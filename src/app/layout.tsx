@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PulseNews — Live Breaking News",
+  title: "SaveitBro News — Live Breaking News",
   description:
     "Real-time news aggregated from trusted sources. Stay informed with breaking headlines, world news, business, technology, science, sport, and entertainment stories.",
   keywords: [
-    "PulseNews",
+    "SaveitBro News",
     "breaking news",
     "world news",
     "UK news",
@@ -32,12 +32,12 @@ export const metadata: Metadata = {
     "Middle East news",
     "Africa news",
   ],
-  authors: [{ name: "PulseNews" }],
+  authors: [{ name: "SaveitBro News" }],
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>",
   },
   openGraph: {
-    title: "PulseNews",
+    title: "SaveitBro News",
     description: "Your source for real-time breaking news",
     type: "website",
   },

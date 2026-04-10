@@ -57,7 +57,7 @@ export function ArticleDetail() {
 
     try {
       const res = await fetch(
-        `/api/news/article?url=${encodeURIComponent(selectedArticle.url)}&nocache=true`
+        `/api/news/article?url=${encodeURIComponent(selectedArticle.url)}`
       );
       const data = await res.json();
 
@@ -113,13 +113,13 @@ export function ArticleDetail() {
   const handleBookmark = () => {
     if (!selectedArticle) return;
     try {
-      const saved = localStorage.getItem("pulse-news-bookmarks-data");
+      const saved = localStorage.getItem("saveitbro-news-bookmarks-data");
       const existing = saved ? (JSON.parse(saved) as NewsArticle[]) : [];
       const bookmarked = isBookmarked(selectedArticle.id);
       if (bookmarked) {
         const filtered = existing.filter((a) => a.id !== selectedArticle.id);
         localStorage.setItem(
-          "pulse-news-bookmarks-data",
+          "saveitbro-news-bookmarks-data",
           JSON.stringify(filtered)
         );
       } else {
@@ -127,7 +127,7 @@ export function ArticleDetail() {
         if (!exists) {
           existing.push(selectedArticle);
           localStorage.setItem(
-            "pulse-news-bookmarks-data",
+            "saveitbro-news-bookmarks-data",
             JSON.stringify(existing)
           );
         }

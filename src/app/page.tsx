@@ -91,10 +91,8 @@ export default function Home() {
                 exit="exit"
                 transition={{ duration: 0.3 }}
               >
-                {/* Hero - Top Stories */}
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 pb-8">
-                  <HeroSection />
-                </div>
+                {/* Hero - Top Stories (full-width bleed) */}
+                <HeroSection />
 
                 {/* Category Tabs */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
