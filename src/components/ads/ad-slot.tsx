@@ -1,77 +1,92 @@
 "use client";
 
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef, memo, useCallback } from "react";
 
 /*
   ╔══════════════════════════════════════════════════════════════════╗
-  ║  HILLTOPADS AD INTEGRATION                                      ║
+  ║  HILLTOPADS AD INTEGRATION — LIVE                               ║
   ╠══════════════════════════════════════════════════════════════════╣
   ║  Publisher Zone ID: 25f22cc3711edbecd5b0                       ║
   ║                                                                  ║
-  ║  HOW TO ACTIVATE ADS:                                           ║
-  ║  1. Log in to your HilltopAds publisher dashboard                ║
-  ║  2. Create ad zones (e.g., "Header 728x90", "Sidebar 300x250")   ║
-  ║  3. Copy the JavaScript ad tag for each zone                    ║
-  ║  4. Replace the placeholder divs below with your actual tags     ║
-  ║                                                                  ║
-  ║  Each zone gets a unique zone ID. Replace ZONE_ID_HERE with     ║
-  ║  your actual HilltopAds zone IDs from the dashboard.            ║
+  ║  4 Active Zones:                                                 ║
+  ║    • Header  — 728x90 (top of page)                             ║
+  ║    • Sidebar — 300x250 (right sidebar)                          ║
+  ║    • Content — 300x250 (between news sections, used 2x)         ║
+  ║    • Footer  — 300x250 (bottom of page)                         ║
   ╚══════════════════════════════════════════════════════════════════╝
 */
 
-// Your main publisher token from HilltopAds
-const HILLTOPADS_PUBLISHER_ID = "25f22cc3711edbecd5b0";
+/* ── HilltopAds Ad Script URLs ── */
+const AD_SCRIPTS: Record<string, string> = {
+  header:  "//pricklyassociation.com/b/XXV.sJdZGil/0QYtWhcW/iePml9pukZiU/lNk/PtTiYr5FN/Dokh2-MRz/cUtsNZj/kM0NO/T/YG0/MiQn",
+  sidebar: "//pricklyassociation.com/bVXmVRs.dmGHl/0qYgWIch/xe/m/9cu/ZyU/lJkZPNTeYE5RNUDPkD2dNIDVkYtkN_j/kT0mOMTVYQ1WMdw_",
+  content: "//pricklyassociation.com/btX.VwssdWGplD0hYgWXcd/Ienmu9ju/ZlUVlnk/PWTFYB5yN/DxkS2AN/jqU/tpNXj/k/0sOzTgYg2QOeQm",
+  footer:  "//pricklyassociation.com/b/XpV.s/dJGnlq0QYyWkcJ/XezmH9/uEZIUNlpkgPOT/Y/5SNFDpkn2eOHD-EctvN/jak/0kOZTjY/4WNvQC",
+};
 
 interface AdSlotProps {
-  id: string;
-  zoneId: string;
+  placement: "header" | "sidebar" | "content" | "footer";
   className?: string;
-  format?: "leaderboard" | "rectangle" | "banner" | "mobile" | "in-article" | "fluid";
+  format?: "leaderboard" | "rectangle" | "in-article";
   label?: boolean;
 }
 
-const SIZE_MAP: Record<string, string> = {
-  leaderboard: "728 × 90",
-  rectangle: "300 × 250",
-  banner: "320 × 50",
-  mobile: "320 × 100",
-  "in-article": "fluid",
-  fluid: "fluid",
-};
-
-/*
-  HilltopAds Zone IDs for each placement.
-  IMPORTANT: Replace these with your actual zone IDs from the HilltopAds dashboard.
-  To create zones: Dashboard → Zones → Create New Zone
-*/
-const ZONE_IDS: Record<string, string> = {
-  header: HILLTOPADS_PUBLISHER_ID,       // Create a 728x90 zone → paste its ID here
-  sidebar: HILLTOPADS_PUBLISHER_ID,      // Create a 300x250 zone → paste its ID here
-  content: HILLTOPADS_PUBLISHER_ID,      // Create a 728x90 zone → paste its ID here
-  "content-2": HILLTOPADS_PUBLISHER_ID,  // Create a 728x90 zone → paste its ID here
-  article: HILLTOPADS_PUBLISHER_ID,      // Create a fluid zone → paste its ID here
-  footer: HILLTOPADS_PUBLISHER_ID,       // Create a 728x90 zone → paste its ID here
-};
-
+/* ── Generic Ad Slot with script injection ── */
 export const AdSlot = memo(function AdSlot({
-  id,
-  zoneId,
-  format = "rectangle",
+  placement,
   className = "",
+  format = "rectangle",
   label = false,
 }: AdSlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
 
-  useEffect(() => {
-    if (containerRef.current && !loadedRef.current) {
-      containerRef.current.dataset.adSlot = id;
-      containerRef.current.dataset.zoneId = zoneId;
-      loadedRef.current = true;
-    }
-  }, [id, zoneId]);
+  const loadAd = useCallback(() => {
+    if (loadedRef.current || !containerRef.current) return;
 
-  const sizeLabel = SIZE_MAP[format] || format;
+    const scriptUrl = AD_SCRIPTS[placement];
+    if (!scriptUrl) return;
+
+    // Clear placeholder
+    containerRef.current.innerHTML = "";
+
+    // Create HilltopAds script element
+    const script = document.createElement("script");
+    script.async = true;
+    script.referrerPolicy = "no-referrer-when-downgrade";
+    script.src = scriptUrl;
+
+    containerRef.current.appendChild(script);
+    loadedRef.current = true;
+  }, [placement]);
+
+  useEffect(() => {
+    // Use IntersectionObserver to load ads only when visible
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            loadAd();
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, [loadAd]);
+
+  const sizeLabel =
+    format === "leaderboard"
+      ? "728 × 90"
+      : format === "rectangle"
+        ? "300 × 250"
+        : "Ad";
 
   return (
     <div className={`ad-container flex flex-col items-center ${className}`}>
@@ -82,36 +97,14 @@ export const AdSlot = memo(function AdSlot({
       )}
       <div
         ref={containerRef}
-        id={id}
         className={`relative w-full flex items-center justify-center overflow-hidden rounded-lg bg-muted/30 border border-border/20 transition-all
           ${format === "leaderboard" ? "max-w-[728px] h-[90px]" : ""}
           ${format === "rectangle" ? "w-full max-w-[300px] h-[250px]" : ""}
-          ${format === "banner" ? "max-w-[320px] h-[50px]" : ""}
-          ${format === "mobile" ? "max-w-[320px] h-[100px]" : ""}
-          ${format === "in-article" ? "min-h-[100px] py-3" : ""}
-          ${format === "fluid" ? "min-h-[250px]" : ""}
+          ${format === "in-article" ? "min-h-[250px] py-3" : ""}
         `}
         aria-label="Advertisement"
         role="complementary"
       >
-        {/*
-          ┌─────────────────────────────────────────────────────┐
-          │  PASTE YOUR HILLTOPADS AD TAG HERE                  │
-          │                                                     │
-          │  Example (replace with your actual tag):             │
-          │  <ins class="hilltopads"                            │
-          │       data-zone="YOUR_ZONE_ID_HERE"                 │
-          │       data-sub="ZONE_ID_HERE"></ins>                 │
-          │  <script>                                           │
-          │    (hilltopads = window.hilltopads || []).push({});  │
-          │    var s = document.createElement("script");         │
-          │    s.type = "text/javascript";                       │
-          │    s.async = true;                                  │
-          │    s.src = "//ad.hilltopads.net/...";               │
-          │    document.head.appendChild(s);                    │
-          │  </script>                                          │
-          └─────────────────────────────────────────────────────┘
-        */}
         <span className="text-xs text-muted-foreground/30 select-none">
           {sizeLabel}
         </span>
@@ -126,9 +119,8 @@ export function HeaderAd() {
   return (
     <div className="w-full flex justify-center py-2 bg-background/80">
       <AdSlot
-        id="div-ad-header"
-        zoneId={ZONE_IDS.header}
-        format="leaderboard"
+        placement="header"
+        format="rectangle"
         label={false}
       />
     </div>
@@ -138,8 +130,7 @@ export function HeaderAd() {
 export function SidebarAd({ className = "" }: { className?: string }) {
   return (
     <AdSlot
-      id="div-ad-sidebar"
-      zoneId={ZONE_IDS.sidebar}
+      placement="sidebar"
       format="rectangle"
       className={className}
     />
@@ -149,9 +140,8 @@ export function SidebarAd({ className = "" }: { className?: string }) {
 export function InContentAd({ className = "" }: { className?: string }) {
   return (
     <AdSlot
-      id="div-ad-content"
-      zoneId={ZONE_IDS.content}
-      format="leaderboard"
+      placement="content"
+      format="rectangle"
       label
       className={className}
     />
@@ -161,9 +151,8 @@ export function InContentAd({ className = "" }: { className?: string }) {
 export function InContentAd2({ className = "" }: { className?: string }) {
   return (
     <AdSlot
-      id="div-ad-content-2"
-      zoneId={ZONE_IDS["content-2"]}
-      format="leaderboard"
+      placement="content"
+      format="rectangle"
       label
       className={className}
     />
@@ -173,8 +162,7 @@ export function InContentAd2({ className = "" }: { className?: string }) {
 export function InArticleAd({ className = "" }: { className?: string }) {
   return (
     <AdSlot
-      id="div-ad-article"
-      zoneId={ZONE_IDS.article}
+      placement="content"
       format="in-article"
       label
       className={className}
@@ -186,9 +174,8 @@ export function FooterAd() {
   return (
     <div className="w-full flex justify-center py-2 bg-background/80">
       <AdSlot
-        id="div-ad-footer"
-        zoneId={ZONE_IDS.footer}
-        format="leaderboard"
+        placement="footer"
+        format="rectangle"
         label={false}
       />
     </div>
