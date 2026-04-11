@@ -21,7 +21,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppStore } from "@/store/news-store";
 import { formatFullDate, generatePlaceholderGradient } from "@/lib/helpers";
 import { cn } from "@/lib/utils";
-import type { NewsArticle } from "@/types/news";
+import type { NewsArticle, Category } from "@/types/news";
+import { CATEGORY_META } from "@/types/news";
 
 interface ArticleContent {
   title: string;
@@ -29,6 +30,26 @@ interface ArticleContent {
   image: string | null;
   publishedTime: string | null;
   author: string | null;
+}
+
+// Helper to set or create a <meta> tag in <head>
+function setMetaTag(attr: string, key: string, value: string) {
+  if (!value) return;
+  const selector = `meta[${attr}="${key}"]`;
+  let el = document.querySelector(selector) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", value);
+}
+
+// Helper to remove a <meta> tag by attribute selector
+function removeMetaTag(attr: string, key: string) {
+  const selector = `meta[${attr}="${key}"]`;
+  const el = document.querySelector(selector);
+  if (el) el.remove();
 }
 
 export function ArticleDetail() {
@@ -88,6 +109,58 @@ export function ArticleDetail() {
       };
     }
   }, [mounted, selectedArticle, fetchContent]);
+
+  // Set document.title, OG meta tags, and Twitter Card meta tags when article loads
+  useEffect(() => {
+    if (!content || !selectedArticle) return;
+
+    const title = content.title || selectedArticle.title;
+    const description = selectedArticle.description;
+    const image = content.image || selectedArticle.image || "";
+    const url = selectedArticle.url;
+    const publishedDate = content.publishedTime || selectedArticle.publishedAt;
+    const categoryMeta = CATEGORY_META[selectedArticle.category as Category];
+    const sectionName = categoryMeta?.label || selectedArticle.category;
+
+    // Save the previous title to restore later
+    const previousTitle = document.title;
+
+    // Set document.title
+    document.title = `${title} | SaveitBro News`;
+
+    // Open Graph meta tags
+    setMetaTag("property", "og:title", title);
+    setMetaTag("property", "og:description", description);
+    setMetaTag("property", "og:image", image);
+    setMetaTag("property", "og:type", "article");
+    setMetaTag("property", "og:url", url);
+    setMetaTag("property", "article:published_time", publishedDate);
+    setMetaTag("property", "article:section", sectionName);
+
+    // Twitter Card meta tags
+    setMetaTag("name", "twitter:card", "summary_large_image");
+    setMetaTag("name", "twitter:title", title);
+    setMetaTag("name", "twitter:description", description);
+    setMetaTag("name", "twitter:image", image);
+
+    return () => {
+      // Restore document.title
+      document.title = previousTitle;
+
+      // Remove dynamically added meta tags to avoid stale values
+      removeMetaTag("property", "og:title");
+      removeMetaTag("property", "og:description");
+      removeMetaTag("property", "og:image");
+      removeMetaTag("property", "og:type");
+      removeMetaTag("property", "og:url");
+      removeMetaTag("property", "article:published_time");
+      removeMetaTag("property", "article:section");
+      removeMetaTag("name", "twitter:card");
+      removeMetaTag("name", "twitter:title");
+      removeMetaTag("name", "twitter:description");
+      removeMetaTag("name", "twitter:image");
+    };
+  }, [content, selectedArticle]);
 
   const handleBack = () => {
     clearArticle();
@@ -151,6 +224,38 @@ export function ArticleDetail() {
   const displayAuthor = content?.author;
   const gradientClass = generatePlaceholderGradient(selectedArticle.category);
 
+  // Build JSON-LD structured data when article content is loaded
+  const jsonLd = content && selectedArticle
+    ? {
+        "@context": "https://schema.org",
+        "@type": "NewsArticle",
+        headline: content.title || selectedArticle.title,
+        description: selectedArticle.description,
+        image: content.image || selectedArticle.image || undefined,
+        datePublished: content.publishedTime || selectedArticle.publishedAt,
+        dateModified: content.publishedTime || selectedArticle.publishedAt,
+        author: {
+          "@type": "Organization",
+          name: "SaveitBro News",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "SaveitBro News",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://saveitbro.com/logo.png",
+          },
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": selectedArticle.url,
+        },
+        articleSection:
+          CATEGORY_META[selectedArticle.category as Category]?.label ||
+          selectedArticle.category,
+      }
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -159,6 +264,13 @@ export function ArticleDetail() {
       transition={{ duration: 0.3 }}
       className="fixed inset-0 z-50 bg-background"
     >
+      {/* JSON-LD structured data for Google News */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <div className="h-full overflow-y-auto">
         {/* Sticky header */}
         <div className="sticky top-0 z-10">
