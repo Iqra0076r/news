@@ -208,7 +208,8 @@ export default function RootLayout({
         {/* Prevent search engines from showing a cached version */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-        {/* HilltopAds Publisher ID: 25f22cc3711edbecd5b0 */}
+        {/* HilltopAds Publisher Verification */}
+        <meta name="7d08b3da7aa0dd8b848125f22cc3711edbecd5b0" content="7d08b3da7aa0dd8b848125f22cc3711edbecd5b0" />
 
         {/* Content classification for advertisers */}
         <meta name="rating" content="general" />
