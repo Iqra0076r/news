@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
 
 // ── Cache ────────────────────────────────────────────────────────
 
@@ -16,7 +15,7 @@ const cache = new Map<
     timestamp: number;
   }
 >();
-const CACHE_MS = 5 * 60 * 1000; // 5 min cache
+const CACHE_MS = 30 * 60 * 1000; // 30 min cache
 
 // ── Image extraction ─────────────────────────────────────────────
 
@@ -29,6 +28,109 @@ function extractFirstImage(html: string): string | null {
     /<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i
   );
   if (twMatch?.[1]) return twMatch[1];
+  return null;
+}
+
+// ── Extract article body from BBC page HTML ──────────────────────
+
+function extractArticleBody(html: string): string {
+  // Try multiple selectors that BBC uses for article content
+  const patterns = [
+    // BBC article blocks
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+    // BBC data-component blocks
+    /<div[^>]*data-component=["']text-block["'][^>]*>([\s\S]*?)<\/div>/gi,
+    // BBC story body
+    /<div[^>]*(?:id|class)=["'][^"']*(?:story-body|article-body|main-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+  ];
+
+  let body = "";
+
+  // Try article tag first
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (articleMatch) {
+    body = articleMatch[1];
+  } else {
+    // Try main content area
+    const mainMatch = html.match(
+      /<div[^>]*(?:id|class)=["'][^"']*(?:story-body|article-body|main-content|body-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i
+    );
+    if (mainMatch) {
+      body = mainMatch[1];
+    } else {
+      // Fallback: try to get everything between the first <p> after header and footer
+      const pContent: string[] = [];
+      const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+      let pMatch;
+      let count = 0;
+      while ((pMatch = pRegex.exec(html)) !== null && count < 50) {
+        const text = pMatch[1].replace(/<[^>]*>/g, "").trim();
+        if (text.length > 40) {
+          pContent.push(pMatch[0]);
+          count++;
+        }
+      }
+      if (pContent.length >= 3) {
+        body = pContent.join("\n");
+      }
+    }
+  }
+
+  return body;
+}
+
+// ── Extract title from HTML ──────────────────────────────────────
+
+function extractTitle(html: string): string {
+  // Try og:title first
+  const ogMatch = html.match(
+    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i
+  );
+  if (ogMatch?.[1]) return ogMatch[1];
+
+  // Try h1
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (h1Match?.[1]) return h1Match[1].replace(/<[^>]*>/g, "").trim();
+
+  // Try <title> tag
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (titleMatch?.[1]) return titleMatch[1].replace(/<[^>]*>/g, "").trim();
+
+  return "";
+}
+
+// ── Extract author from HTML ─────────────────────────────────────
+
+function extractAuthor(html: string): string | null {
+  const authorMatch = html.match(
+    /<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i
+  );
+  if (authorMatch?.[1]) return authorMatch[1];
+
+  // Try byline pattern
+  const bylineMatch = html.match(
+    /<[^>]*(?:class|data-component)=["'][^"']*(?:byline|author)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i
+  );
+  if (bylineMatch?.[1]) return bylineMatch[1].replace(/<[^>]*>/g, "").trim();
+
+  return null;
+}
+
+// ── Extract published time ───────────────────────────────────────
+
+function extractPublishedTime(html: string): string | null {
+  // Try article:published_time
+  const timeMatch = html.match(
+    /<meta[^>]*property=["']article:published_time["'][^>]*content=["']([^"']+)["']/i
+  );
+  if (timeMatch?.[1]) return timeMatch[1];
+
+  // Try datePublished
+  const dateMatch = html.match(
+    /<meta[^>]*itemprop=["']datePublished["'][^>]*content=["']([^"']+)["']/i
+  );
+  if (dateMatch?.[1]) return dateMatch[1];
+
   return null;
 }
 
@@ -55,7 +157,6 @@ const REMOVE_TAGS = [
 
 // Class/id patterns that indicate non-article content
 const REMOVE_SELECTORS = [
-  // Social sharing
   /\bshare\b/i,
   /\bsharing\b/i,
   /\bsocial\b/i,
@@ -68,7 +169,6 @@ const REMOVE_SELECTORS = [
   /\bshare-icon\b/i,
   /\bshare-button\b/i,
   /\bshare-tools\b/i,
-  // Navigation
   /\bnav\b/i,
   /\bnavigation\b/i,
   /\bmenu\b/i,
@@ -78,7 +178,6 @@ const REMOVE_SELECTORS = [
   /\bconsent\b/i,
   /\bnotification\b/i,
   /\bpromo\b/i,
-  // Related/side content
   /\brelated\b/i,
   /\bmost-read\b/i,
   /\bmost-watched\b/i,
@@ -92,7 +191,6 @@ const REMOVE_SELECTORS = [
   /\bad\b/i,
   /\bsponsor/i,
   /\bcommercial\b/i,
-  // Interactive features
   /\bcomments?\b/i,
   /\bresponse\b/i,
   /\bfeatures-belt\b/i,
@@ -104,43 +202,19 @@ const REMOVE_SELECTORS = [
   /\bsign-up\b/i,
   /\bjoin-us\b/i,
   /\bmember/i,
-  // Utility
   /\bskip-link\b/i,
   /\bskip-to\b/i,
-  /\baccessibility\b/i,
   /\boverlay\b/i,
   /\bmodal\b/i,
   /\bpopup\b/i,
   /\btooltip\b/i,
   /\bprint\b/i,
   /\bbanner\b/i,
-  // Footer/header specific
   /\bbrand\b/i,
   /\bglobal-nav\b/i,
   /\bidentity\b/i,
   /\bhome-link\b/i,
   /\bcorrespondent\b/i,
-];
-
-// Patterns to remove from element text content
-const TEXT_PATTERNS_TO_REMOVE = [
-  /\bShare\s+(this|page|article|story)\b/gi,
-  /\bShare\b.*?(via|on|with)\b/gi,
-  /\bCopy\s+(this|page)\s+link\b/gi,
-  /\bMost\s+read\b/gi,
-  /\bMore\s+(on|about|from)\b/gi,
-  /\bRelated\b.*?\btopic\b/gi,
-  /\bWhat\s+you\s+need\s+to\s+know\b/gi,
-  /\bKey\s+points?\b/gi,
-  /\bRead\s+more\b/gi,
-  /\bWas\s+this\s+helpful\?/gi,
-  /\bHow\s+to\s+(listen|watch|follow)\b/gi,
-  /\bSend\s+us\b/gi,
-  /\bTerms?\s+of\s+Use\b/gi,
-  /\bPrivacy\b/gi,
-  /\bCookie\b/gi,
-  /\bAccessibility\b/gi,
-  /\bContact\b/gi,
 ];
 
 function cleanArticleHtml(rawHtml: string): string {
@@ -178,17 +252,16 @@ function cleanArticleHtml(rawHtml: string): string {
   // 6. Remove decorative/separator elements
   html = html.replace(/<hr[^>]*\/?>/gi, "");
 
-  // 7. Remove links that are just social/external share links
+  // 7. Remove social/external share links
   html = html.replace(
     /<a[^>]*(?:facebook|twitter|whatsapp|linkedin|pinterest|email|share|reddit|telegram)[^>]*>[\s\S]*?<\/a>/gi,
     ""
   );
 
-  // 8. Clean up image tags - keep src, alt, width, height only
+  // 8. Clean up image tags - keep src, alt only
   html = html.replace(
     /<img([^>]*?)src=["']([^"']+)["']([^>]*?)\/?>/gi,
-    (match, before, src, after) => {
-      // Extract alt text if present
+    (match, _before, src) => {
       const altMatch = match.match(/alt=["']([^"']+)["']/i);
       const alt = altMatch ? `alt="${altMatch[1]}"` : 'alt=""';
       return `<img src="${src}" ${alt} loading="lazy" />`;
@@ -199,10 +272,8 @@ function cleanArticleHtml(rawHtml: string): string {
   html = html.replace(
     /<figure[^>]*>([\s\S]*?)<\/figure>/gi,
     (_, content) => {
-      // Extract the image
       const imgMatch = content.match(/<img[^>]*>/i);
       if (!imgMatch) return "";
-      // Extract figcaption
       const captionMatch = content.match(
         /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i
       );
@@ -213,7 +284,7 @@ function cleanArticleHtml(rawHtml: string): string {
     }
   );
 
-  // 10. Convert paragraphs with strong/b tags that are section headers
+  // 10. Convert paragraphs with strong/b that are section headers
   html = html.replace(
     /<p[^>]*>\s*<strong[^>]*>([\s\S]*?)<\/strong>\s*<\/p>/gi,
     (_, text) => {
@@ -225,10 +296,10 @@ function cleanArticleHtml(rawHtml: string): string {
   );
 
   // 11. Clean up paragraph spacing
-  html = html.replace(/<p[^>]*>\s*/gi, '<p>');
+  html = html.replace(/<p[^>]*>\s*/gi, "<p>");
   html = html.replace(/\s*<\/p>/gi, "</p>");
 
-  // 12. Remove excessive nested divs - unwrap content from single-child divs
+  // 12. Remove excessive nested divs
   let prevHtml = "";
   let maxIterations = 10;
   while (prevHtml !== html && maxIterations > 0) {
@@ -236,8 +307,6 @@ function cleanArticleHtml(rawHtml: string): string {
     html = html.replace(
       /<div[^>]*>([\s\S]*?)<\/div>/g,
       (_, content) => {
-        // Only unwrap if the div doesn't have significant attributes
-        // and doesn't contain block-level children
         if (
           content.trim() &&
           !content.match(/<(?:div|p|h[1-6]|ul|ol|li|table|section|article)/i)
@@ -250,17 +319,15 @@ function cleanArticleHtml(rawHtml: string): string {
     maxIterations--;
   }
 
-  // 13. Remove leftover BBC text references from content
+  // 13. Remove BBC text references
   html = html.replace(/\bBBC\b/g, "SaveitBro News");
   html = html.replace(/\bBritish Broadcasting Corporation\b/g, "SaveitBro News");
 
   // 14. Remove empty anchors
   html = html.replace(/<a[^>]*>\s*<\/a>/gi, "");
-
-  // 15. Remove remaining links that are just "#" or javascript:
   html = html.replace(/<a[^>]*(?:href=["']#["']|href=["']javascript:[^"']*["'])[^>]*>[\s\S]*?<\/a>/gi, "");
 
-  // 16. Clean up whitespace
+  // 15. Clean up whitespace
   html = html.replace(/\n{3,}/g, "\n\n");
   html = html.replace(/  +/g, " ");
 
@@ -290,7 +357,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check cache (unless nocache)
+    // Check cache
     if (!nocache) {
       const cached = cache.get(url);
       if (cached && Date.now() - cached.timestamp < CACHE_MS) {
@@ -298,44 +365,51 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const zai = await ZAI.create();
-    const result = await zai.functions.invoke("page_reader", { url });
+    // Fetch article HTML directly — works on any hosting platform
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; SaveitBroNews/1.0; +https://saveitbro.com)",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+      },
+      next: { revalidate: 1800 }, // Cache for 30 min
+    });
 
-    if (!result || !result.data) {
+    if (!response.ok) {
       return NextResponse.json(
-        { success: false, error: "Failed to read article" },
-        { status: 500 }
+        { success: false, error: "Failed to fetch the article page" },
+        { status: 502 }
       );
     }
 
-    const data = result.data as {
-      title?: string;
-      html?: string;
-      publishedTime?: string;
-    };
+    const rawHtml = await response.text();
 
-    const title = data.title || "";
-    const rawHtml = data.html || "";
+    if (!rawHtml || rawHtml.length < 200) {
+      return NextResponse.json(
+        { success: false, error: "Article page returned empty content" },
+        { status: 502 }
+      );
+    }
 
-    // Extract hero image
+    // Extract structured data
+    const title = extractTitle(rawHtml);
+    const author = extractAuthor(rawHtml);
+    const publishedTime = extractPublishedTime(rawHtml);
     const image = extractFirstImage(rawHtml);
 
-    // Extract author
-    let author: string | null = null;
-    const authorMatch = rawHtml.match(
-      /<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i
-    );
-    if (authorMatch) author = authorMatch[1];
+    // Extract article body
+    const bodyHtml = extractArticleBody(rawHtml);
 
-    // Clean the HTML aggressively
-    const html = cleanArticleHtml(rawHtml);
+    // Clean the HTML
+    const html = cleanArticleHtml(bodyHtml);
 
     // Store in cache
     const responseData = {
       title,
       html,
       image,
-      publishedTime: data.publishedTime || null,
+      publishedTime,
       author,
     };
     cache.set(url, { data: responseData, timestamp: Date.now() });
