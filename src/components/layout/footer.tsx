@@ -6,7 +6,7 @@ import { CATEGORY_META } from "@/types/news";
 import type { Category } from "@/types/news";
 
 export function Footer() {
-  const { setCategory } = useAppStore();
+  const { setCategory, setView } = useAppStore();
 
   const newsCategories: Category[] = [
     "top-stories",
@@ -97,36 +97,36 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => setView("about")}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   About
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => setView("contact")}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contact
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => setView("privacy")}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Privacy Policy
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => setView("terms")}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Terms of Service
-                </a>
+                </button>
               </li>
               <li>
                 <a

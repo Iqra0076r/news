@@ -207,6 +207,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#dc2626" />
         {/* Prevent search engines from showing a cached version */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+        {/* Media.net Publisher Verification — replace VERIFICATION_ID with your actual ID */}
+        {/* <meta name="media.net_verification" content="VERIFICATION_ID" /> */}
+
+        {/* Content classification for advertisers */}
+        <meta name="rating" content="general" />
+        <meta name="language" content="english" />
+        <meta name="revisit-after" content="5 minutes" />
+        <meta name="audience" content="all" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}

@@ -197,3 +197,73 @@ Stage Summary:
 - RSS icon in navbar
 - All endpoints verified: / (200), /api/og (200 PNG), /favicon.svg (200), /manifest.json (200)
 - Clean lint (0 errors)
+
+---
+Task ID: 7
+Agent: full-stack-developer
+Task: Create 4 professional legal/info page components for Media.net publisher compliance
+
+Work Log:
+- Read worklog.md for full project context, analyzed existing types/store/page.tsx/footer.tsx
+- Created `/src/components/legal/` directory
+- Created `/src/components/legal/about-page.tsx` — About Us page with hero, mission, what we do (13 categories), editorial integrity, content sourcing, team section
+- Created `/src/components/legal/contact-page.tsx` — Contact page with hero, 3 info cards, contact form with success animation, social media links, department emails
+- Created `/src/components/legal/privacy-page.tsx` — Comprehensive Privacy Policy (14 sections): Introduction, Information Collection, How We Use, Cookies & Tracking (4 cookie types + 3rd parties), Third-Party Services (Media.net + Google Analytics), Interest-Based Advertising, User Choices & Opt-Out (Media.net, Google, NAI, DAA links), Data Retention, Children's Privacy, Data Security, International Transfers, GDPR & CCPA Compliance (7 EU rights, 5 CA rights), Changes, Contact
+- Created `/src/components/legal/terms-page.tsx` — Comprehensive Terms of Service (15 sections): Acceptance, Description of Service, User Conduct, IP (3rd-party content ownership), Warranties, Limitation of Liability, Advertising (Media.net + AdSense), Third-Party Links, Privacy, Indemnification, Changes, Governing Law, Severability, Entire Agreement, Contact
+- Updated `/src/app/page.tsx` — Added imports and 4 new view routing blocks with motion.div wrappers
+- Updated `/src/components/layout/footer.tsx` — Changed 4 `<a href="#">` to `<button onClick={() => setView("...")}>` for About, Contact, Privacy Policy, Terms of Service
+- All pages use consistent styling: "use client", ArrowLeft back button, max-w-4xl layout, card backgrounds, red accent icons, Separator dividers
+- bun run lint: 0 errors, dev server compiled successfully
+
+Stage Summary:
+- 4 professional legal/info pages created and fully integrated into SPA routing
+- Privacy Policy is Media.net approval-ready with comprehensive GDPR/CCPA compliance, cookie disclosures, opt-out instructions, and targeted advertising sections
+- Terms of Service covers all standard legal sections with advertising partner disclaimers
+- Footer links now properly navigate to all 4 legal pages via Zustand store
+- Clean lint (0 errors), dev server compiling
+
+---
+Task ID: 7
+Agent: Main Agent + Subagent (full-stack-developer)
+Task: Prepare website for Media.net ad integration — full publisher readiness
+
+Work Log:
+- Updated `AppView` type in `src/types/news.ts` to add "about" | "contact" | "privacy" | "terms"
+- Created `src/components/ads/ad-slot.tsx` — Reusable AdSlot component with 5 pre-configured variants:
+  - HeaderAd: 728x90 leaderboard below navbar
+  - SidebarAd: 300x250 rectangle in sidebar
+  - InContentAd: 728x90 leaderboard between content sections (2 placements on homepage)
+  - InArticleAd: fluid in-article ad
+  - FooterAd: 728x90 leaderboard above footer
+  - Each slot has `data-ad-slot` attribute and Media.net integration comments
+- Created `src/components/ads/cookie-consent.tsx` — GDPR cookie consent banner:
+  - Animated slide-up with spring physics
+  - "Accept All" / "Necessary Only" / Dismiss options
+  - Stores consent in localStorage
+  - Links to Privacy Policy
+  - Shows after 1.5s delay
+- Created 4 comprehensive legal pages via subagent:
+  - `src/components/legal/about-page.tsx` — About Us with mission, sourcing process, editorial integrity
+  - `src/components/legal/contact-page.tsx` — Contact with form, social links, department emails
+  - `src/components/legal/privacy-page.tsx` — 14-section Privacy Policy (Media.net named in 6 sections, GDPR/CCPA compliance)
+  - `src/components/legal/terms-page.tsx` — 15-section Terms of Service with IP, ad disclaimers, governing law
+- Updated `src/app/page.tsx`:
+  - Added HeaderAd below Navbar
+  - Added SidebarAd in the trending sidebar area
+  - Added 2 InContentAds between content sections (World→Business, Business→Sport)
+  - Added FooterAd above Footer
+  - Added CookieConsent component
+  - Wired all 4 legal page views (about, contact, privacy, terms)
+- Updated `src/components/layout/footer.tsx` — Footer links now use setView() to navigate to legal pages
+- Updated `src/app/layout.tsx`:
+  - Added Media.net verification meta tag (commented, ready for real ID)
+  - Added content classification metas (rating: general, language, audience, revisit-after)
+
+Stage Summary:
+- 5 ad placement slots ready for Media.net ad code injection
+- Cookie consent banner for GDPR compliance (required by ad networks)
+- 4 professional legal pages (About, Contact, Privacy Policy, Terms of Service)
+- Privacy Policy explicitly covers Media.net advertising, cookies, opt-out, GDPR/CCPA
+- Footer links fully functional
+- Media.net publisher meta tags in place
+- Clean lint (0 errors), all routes returning 200

@@ -11,6 +11,12 @@ import { SearchResults } from "@/components/news/search-results";
 import { CategoryView } from "@/components/news/category-view";
 import { ArticleDetail } from "@/components/news/article-detail";
 import { BookmarksView } from "@/components/bookmarks/bookmarks-view";
+import { AboutPage } from "@/components/legal/about-page";
+import { ContactPage } from "@/components/legal/contact-page";
+import { PrivacyPage } from "@/components/legal/privacy-page";
+import { TermsPage } from "@/components/legal/terms-page";
+import { HeaderAd, InContentAd, FooterAd, SidebarAd } from "@/components/ads/ad-slot";
+import { CookieConsent } from "@/components/ads/cookie-consent";
 import { useAppStore } from "@/store/news-store";
 import { Separator } from "@/components/ui/separator";
 
@@ -51,6 +57,9 @@ export default function Home() {
       </noscript>
 
       <Navbar />
+
+      {/* Header Ad Banner — Leaderboard 728x90 */}
+      <HeaderAd />
 
       {/* Article Detail Overlay */}
       <AnimatePresence>
@@ -106,6 +115,66 @@ export default function Home() {
               </motion.div>
             )}
 
+            {/* ABOUT VIEW */}
+            {currentView === "about" && (
+              <motion.div
+                key="about"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="mx-auto max-w-4xl px-4 sm:px-6 py-6"
+              >
+                <AboutPage />
+              </motion.div>
+            )}
+
+            {/* CONTACT VIEW */}
+            {currentView === "contact" && (
+              <motion.div
+                key="contact"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="mx-auto max-w-4xl px-4 sm:px-6 py-6"
+              >
+                <ContactPage />
+              </motion.div>
+            )}
+
+            {/* PRIVACY VIEW */}
+            {currentView === "privacy" && (
+              <motion.div
+                key="privacy"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="mx-auto max-w-4xl px-4 sm:px-6 py-6"
+              >
+                <PrivacyPage />
+              </motion.div>
+            )}
+
+            {/* TERMS VIEW */}
+            {currentView === "terms" && (
+              <motion.div
+                key="terms"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="mx-auto max-w-4xl px-4 sm:px-6 py-6"
+              >
+                <TermsPage />
+              </motion.div>
+            )}
+
             {/* HOME VIEW */}
             {currentView === "home" && (
               <motion.div
@@ -124,7 +193,7 @@ export default function Home() {
                   <CategoryTabs />
                 </div>
 
-                {/* World + Trending */}
+                {/* World + Trending + Sidebar Ad */}
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-10">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
@@ -134,15 +203,20 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="lg:col-span-1">
-                      <div className="sticky top-36">
+                      <div className="sticky top-36 space-y-6">
                         <h2 className="text-lg font-bold mb-4">Most Read</h2>
                         <div className="bg-card rounded-xl border border-border/50 p-4">
                           <TrendingSidebar />
                         </div>
+                        {/* Sidebar Ad — 300x250 */}
+                        <SidebarAd />
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* In-Content Ad — Leaderboard 728x90 */}
+                <InContentAd className="my-6" />
 
                 <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
 
@@ -163,6 +237,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* In-Content Ad — Leaderboard 728x90 */}
+                <InContentAd className="my-2" />
 
                 <Separator className="mx-auto max-w-7xl px-4 sm:px-6" />
 
@@ -202,8 +279,14 @@ export default function Home() {
         </main>
       )}
 
+      {/* Footer Ad Banner — Leaderboard 728x90 */}
+      <FooterAd />
+
       {/* Footer */}
       {currentView !== "article" && <Footer />}
+
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
 
       {/* Noscript footer for crawlers */}
       <noscript>

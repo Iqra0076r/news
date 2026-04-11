@@ -35,7 +35,7 @@ export type Category =
   | "cricket"
   | "entertainment";
 
-export type AppView = "home" | "search" | "category" | "article" | "bookmarks";
+export type AppView = "home" | "search" | "category" | "article" | "bookmarks" | "about" | "contact" | "privacy" | "terms";
 
 export interface AppState {
   currentView: AppView;
