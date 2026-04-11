@@ -25,6 +25,31 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Noscript fallback: visible to search engine crawlers that don't execute JavaScript */}
+      <noscript>
+        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '12px' }}>SaveitBro News — Live Breaking News</h1>
+          <p style={{ fontSize: '16px', color: '#666', marginBottom: '24px' }}>Real-time news aggregated from trusted sources. Stay informed with breaking headlines, world news, business, technology, science, sport, and entertainment stories.</p>
+          <nav aria-label="Main navigation">
+            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>News Categories</h2>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {['Top Stories', 'World', 'UK', 'Asia', 'Middle East', 'Africa', 'Business', 'Technology', 'Science', 'Sport', 'Football', 'Cricket', 'Entertainment'].map((cat) => (
+                <li key={cat}>
+                  <a href={`/?category=${cat.toLowerCase().replace(/ /g, '-')}`} style={{ display: 'inline-block', padding: '6px 14px', background: '#fef2f2', color: '#dc2626', borderRadius: '6px', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>{cat}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div style={{ marginTop: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>About SaveitBro News</h2>
+            <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.7' }}>SaveitBro News is a real-time news aggregator bringing you the latest breaking headlines from trusted sources worldwide. Covering world news, business, technology, science, sport, and entertainment — we help you stay informed with the stories that matter most.</p>
+          </div>
+          <div style={{ marginTop: '24px' }}>
+            <a href="/feed.xml" style={{ color: '#dc2626', fontSize: '14px' }}>Subscribe to our RSS Feed</a>
+          </div>
+        </div>
+      </noscript>
+
       <Navbar />
 
       {/* Article Detail Overlay */}
@@ -179,6 +204,17 @@ export default function Home() {
 
       {/* Footer */}
       {currentView !== "article" && <Footer />}
+
+      {/* Noscript footer for crawlers */}
+      <noscript>
+        <footer style={{ borderTop: '1px solid #e5e7eb', padding: '24px 20px', marginTop: '40px', textAlign: 'center' }}>
+          <p style={{ fontSize: '12px', color: '#9ca3af' }}>&copy; {new Date().getFullYear()} SaveitBro News. All content belongs to its original publishers. News sourced from trusted RSS feeds.</p>
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '16px' }}>
+            <a href="/feed.xml" style={{ fontSize: '12px', color: '#6b7280' }}>RSS Feed</a>
+            <a href="/sitemap.xml" style={{ fontSize: '12px', color: '#6b7280' }}>Sitemap</a>
+          </div>
+        </footer>
+      </noscript>
     </div>
   );
 }

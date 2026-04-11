@@ -120,6 +120,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: "/api/og",
+        headers: [
+          ...securityHeaders,
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=86400, stale-while-revalidate=172800",
+          },
+        ],
+      },
+      {
         source: "/_next/image(.*)",
         headers: [
           { key: "Access-Control-Allow-Origin", value: "*" },

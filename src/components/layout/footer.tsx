@@ -94,23 +94,49 @@ export function Footer() {
 
           {/* Info */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">About</h3>
+            <h3 className="text-sm font-semibold mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <span className="text-sm text-muted-foreground">About</span>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  About
+                </a>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">Contact</span>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Contact
+                </a>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Privacy Policy
-                </span>
+                </a>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Terms of Service
-                </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/feed.xml"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  RSS Feed
+                </a>
               </li>
             </ul>
             <p className="text-xs text-muted-foreground mt-4">
@@ -125,9 +151,25 @@ export function Footer() {
             &copy; {new Date().getFullYear()} SaveitBro News. All content belongs to
             its original publishers.
           </p>
-          <p className="text-xs text-muted-foreground">
-            News sourced from trusted RSS feeds
-          </p>
+          <div className="flex items-center gap-4">
+            <a
+              href="/feed.xml"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              RSS Feed
+            </a>
+            <a
+              href="/sitemap.xml"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sitemap
+            </a>
+            <p className="text-xs text-muted-foreground">
+              News sourced from trusted RSS feeds
+            </p>
+          </div>
         </div>
       </div>
     </footer>

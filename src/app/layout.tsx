@@ -22,6 +22,8 @@ const SITE_NAME = "SaveitBro News";
 const SITE_DESCRIPTION =
   "Real-time news aggregated from trusted sources. Stay informed with breaking headlines, world news, business, technology, science, sport, and entertainment stories.";
 
+const OG_IMAGE_URL = `${SITE_URL}/api/og?title=${encodeURIComponent("SaveitBro News")}&description=${encodeURIComponent("Live Breaking News & Headlines")}`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
@@ -87,6 +89,9 @@ export const metadata: Metadata = {
 
   alternates: {
     canonical: "/",
+    types: {
+      "application/rss+xml": `${SITE_URL}/feed.xml`,
+    },
   },
 
   openGraph: {
@@ -96,17 +101,37 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "en_GB",
     url: SITE_URL,
+    images: [
+      {
+        url: "/api/og?title=SaveitBro%20News&description=Live%20Breaking%20News%20%26%20Headlines",
+        width: 1200,
+        height: 630,
+        alt: "SaveitBro News — Live Breaking News",
+        type: "image/png",
+      },
+    ],
   },
 
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} — Live Breaking News`,
     description: SITE_DESCRIPTION,
+    images: [
+      "/api/og?title=SaveitBro%20News&description=Live%20Breaking%20News%20%26%20Headlines",
+    ],
   },
 
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.svg", type: "image/svg+xml" },
+    ],
   },
+
+  manifest: "/manifest.json",
 
   category: "news",
 
@@ -124,7 +149,7 @@ const jsonLdOrganization = {
   url: SITE_URL,
   logo: {
     "@type": "ImageObject",
-    url: `${SITE_URL}/logo.png`,
+    url: `${SITE_URL}/favicon.svg`,
     width: 512,
     height: 512,
   },
@@ -168,6 +193,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* RSS Auto-Discovery for browsers and crawlers */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="SaveitBro News RSS Feed"
+          href="/feed.xml"
+        />
+        {/* Web App Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        {/* Theme color for mobile browsers */}
+        <meta name="theme-color" content="#dc2626" />
+        {/* Prevent search engines from showing a cached version */}
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
       >
