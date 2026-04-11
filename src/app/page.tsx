@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -19,9 +20,69 @@ import { HeaderAd, InContentAd, FooterAd, SidebarAd } from "@/components/ads/ad-
 import { CookieConsent } from "@/components/ads/cookie-consent";
 import { useAppStore } from "@/store/news-store";
 import { Separator } from "@/components/ui/separator";
+import type { NewsArticle } from "@/types/news";
 
 export default function Home() {
-  const { currentView, selectedArticle } = useAppStore();
+  const { currentView, selectedArticle, selectArticle } = useAppStore();
+  const articleParamHandled = useRef(false);
+
+  // Handle incoming shared article links (?article=BASE64_ENCODED_URL)
+  useEffect(() => {
+    if (articleParamHandled.current) return;
+    articleParamHandled.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const encodedArticle = params.get("article");
+
+    if (!encodedArticle) return;
+
+    let originalUrl: string;
+    try {
+      originalUrl = decodeURIComponent(atob(encodedArticle));
+    } catch {
+      return;
+    }
+
+    // Validate it looks like a BBC URL
+    if (!originalUrl.includes("bbc.co.uk") && !originalUrl.includes("bbc.com")) {
+      return;
+    }
+
+    // Look up the article via our API
+    const loadSharedArticle = async () => {
+      try {
+        const res = await fetch(
+          `/api/news/lookup?url=${encodeURIComponent(originalUrl)}`
+        );
+        const data = await res.json();
+
+        if (data.success && data.article) {
+          const article: NewsArticle = {
+            id: data.article.id,
+            title: data.article.title,
+            description: data.article.description,
+            content: data.article.content || "",
+            url: data.article.url,
+            image: data.article.image,
+            source: data.article.source,
+            sourceIcon: data.article.sourceIcon,
+            publishedAt: data.article.publishedAt,
+            category: data.article.category,
+            author: data.article.author || undefined,
+          };
+          selectArticle(article);
+        }
+      } catch (err) {
+        console.error("Failed to load shared article:", err);
+      }
+    };
+
+    loadSharedArticle();
+
+    // Clean the URL without triggering a re-render
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+  }, [selectArticle]);
 
   const pageVariants = {
     initial: { opacity: 0, y: 8 },

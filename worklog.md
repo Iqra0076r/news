@@ -296,3 +296,45 @@ Stage Summary:
 - Privacy Policy and Terms of Service reference HilltopAds throughout
 - Zero Media.net references remain in codebase
 - Clean lint (0 errors), homepage returning 200
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Fix social sharing to use saveitbro.fun links + add social share popup
+
+Work Log:
+- Created `/src/components/news/share-popup.tsx` — Beautiful social share popup modal with:
+  - 5 social share buttons: X/Twitter, Facebook, WhatsApp, Telegram, LinkedIn (3-column grid)
+  - Copy link button with clipboard API + toast feedback via shadcn toast
+  - Glassmorphism backdrop (bg-black/40 + backdrop-blur-md)
+  - Framer-motion animated entrance (spring physics: scale + translateY)
+  - Article title/description preview card
+  - Mobile-friendly grid layout
+  - Keyboard support (Escape to close)
+- Updated `/src/components/news/article-detail.tsx`:
+  - Added `getShareableUrl()` helper: encodes BBC URL via `btoa()` → `saveitbro.com/?article=ENCODED`
+  - Fixed OG meta tags: `og:url`, `og:site_name`, and `twitter:url` now use saveitbro.com shareable URL
+  - Fixed JSON-LD: `mainEntityOfPage["@id"]` now uses saveitbro.com shareable URL
+  - Updated `handleShare`: uses `navigator.share` with saveitbro URL on mobile, falls back to SharePopup
+  - Added SharePopup state + rendered component (opened by share button in header)
+  - Added "Share this article" button at bottom of article content
+- Created `/src/app/api/news/lookup/route.ts` — Article lookup API endpoint:
+  - GET with `?url=` param (original BBC URL)
+  - Fetches article HTML using direct fetch + CORS proxy fallbacks
+  - Extracts: title, description, image (HD upgraded), author, published time, body content
+  - Auto-detects category from URL path (13 categories supported)
+  - Returns full `NewsArticle` object with 30-min in-memory cache
+- Updated `/src/app/page.tsx`:
+  - Added `useEffect` to handle `?article=` query param on page load
+  - Decodes base64-encoded URL, validates BBC domain
+  - Calls `/api/news/lookup?url=` to fetch article metadata
+  - Sets article in store via `selectArticle()` to open article detail view
+  - Cleans URL via `history.replaceState()` after loading
+  - Uses `useRef` to prevent duplicate handling on re-renders
+
+Stage Summary:
+- All share links now point to saveitbro.com instead of BBC, driving traffic to our site
+- Beautiful animated share popup with 6 share options (5 social + copy link)
+- Incoming shared links (saveitbro.com/?article=...) are automatically decoded and displayed
+- OG/Twitter meta tags and JSON-LD structured data all reference saveitbro.com URLs
+- Clean lint (0 errors), dev server compiling without errors

@@ -23,6 +23,14 @@ import { formatFullDate, generatePlaceholderGradient } from "@/lib/helpers";
 import { cn } from "@/lib/utils";
 import type { NewsArticle, Category } from "@/types/news";
 import { CATEGORY_META } from "@/types/news";
+import { SharePopup } from "@/components/news/share-popup";
+
+// Build a shareable saveitbro.fun URL that encodes the original article URL
+function getShareableUrl(articleUrl: string): string {
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://saveitbro.com";
+  const encoded = btoa(articleUrl);
+  return `${SITE_URL}/?article=${encodeURIComponent(encoded)}`;
+}
 
 interface ArticleContent {
   title: string;
@@ -64,6 +72,7 @@ export function ArticleDetail() {
   const [content, setContent] = useState<ArticleContent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -117,7 +126,7 @@ export function ArticleDetail() {
     const title = content.title || selectedArticle.title;
     const description = selectedArticle.description;
     const image = content.image || selectedArticle.image || "";
-    const url = selectedArticle.url;
+    const shareableUrl = getShareableUrl(selectedArticle.url);
     const publishedDate = content.publishedTime || selectedArticle.publishedAt;
     const categoryMeta = CATEGORY_META[selectedArticle.category as Category];
     const sectionName = categoryMeta?.label || selectedArticle.category;
@@ -128,20 +137,22 @@ export function ArticleDetail() {
     // Set document.title
     document.title = `${title} | SaveitBro News`;
 
-    // Open Graph meta tags
+    // Open Graph meta tags — use saveitbro.fun shareable URL
     setMetaTag("property", "og:title", title);
     setMetaTag("property", "og:description", description);
     setMetaTag("property", "og:image", image);
     setMetaTag("property", "og:type", "article");
-    setMetaTag("property", "og:url", url);
+    setMetaTag("property", "og:url", shareableUrl);
+    setMetaTag("property", "og:site_name", "SaveitBro News");
     setMetaTag("property", "article:published_time", publishedDate);
     setMetaTag("property", "article:section", sectionName);
 
-    // Twitter Card meta tags
+    // Twitter Card meta tags — use saveitbro.fun shareable URL
     setMetaTag("name", "twitter:card", "summary_large_image");
     setMetaTag("name", "twitter:title", title);
     setMetaTag("name", "twitter:description", description);
     setMetaTag("name", "twitter:image", image);
+    setMetaTag("name", "twitter:url", shareableUrl);
 
     return () => {
       // Restore document.title
@@ -153,12 +164,14 @@ export function ArticleDetail() {
       removeMetaTag("property", "og:image");
       removeMetaTag("property", "og:type");
       removeMetaTag("property", "og:url");
+      removeMetaTag("property", "og:site_name");
       removeMetaTag("property", "article:published_time");
       removeMetaTag("property", "article:section");
       removeMetaTag("name", "twitter:card");
       removeMetaTag("name", "twitter:title");
       removeMetaTag("name", "twitter:description");
       removeMetaTag("name", "twitter:image");
+      removeMetaTag("name", "twitter:url");
     };
   }, [content, selectedArticle]);
 
@@ -167,21 +180,25 @@ export function ArticleDetail() {
     setView("home");
   };
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
+    if (!selectedArticle) return;
+    const shareableUrl = getShareableUrl(selectedArticle.url);
+    // On mobile, try native share with saveitbro.fun URL
     if (navigator.share) {
       try {
         await navigator.share({
-          title: selectedArticle?.title,
-          text: selectedArticle?.description,
-          url: selectedArticle?.url,
+          title: selectedArticle.title,
+          text: selectedArticle.description,
+          url: shareableUrl,
         });
+        return;
       } catch {
-        // cancelled
+        // cancelled or failed — fall through to popup
       }
-    } else {
-      await navigator.clipboard.writeText(selectedArticle?.url || "");
     }
-  };
+    // Open the share popup
+    setShareOpen(true);
+  }, [selectedArticle]);
 
   const handleBookmark = () => {
     if (!selectedArticle) return;
@@ -248,7 +265,7 @@ export function ArticleDetail() {
         },
         mainEntityOfPage: {
           "@type": "WebPage",
-          "@id": selectedArticle.url,
+          "@id": getShareableUrl(selectedArticle.url),
         },
         articleSection:
           CATEGORY_META[selectedArticle.category as Category]?.label ||
@@ -306,6 +323,13 @@ export function ArticleDetail() {
                 >
                   <Share2 className="h-5 w-5" />
                 </Button>
+                <SharePopup
+                  open={shareOpen}
+                  onClose={() => setShareOpen(false)}
+                  title={selectedArticle.title}
+                  url={getShareableUrl(selectedArticle.url)}
+                  description={selectedArticle.description}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -475,8 +499,20 @@ export function ArticleDetail() {
               </Button>
             </div>
 
+            {/* Share button at bottom of article */}
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                className="gap-2 rounded-lg w-full sm:w-auto"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="h-4 w-4" />
+                Share this article
+              </Button>
+            </div>
+
             {/* Source attribution - no BBC mention */}
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/30">
+            <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border/30">
               <p className="text-xs text-muted-foreground">
                 Source:{" "}
                 <span className="font-medium text-foreground">
