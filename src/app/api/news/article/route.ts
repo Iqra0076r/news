@@ -1,270 +1,191 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// ── Vercel config: allow up to 30s for article fetching ──────────
+// ── Vercel config ────────────────────────────────────────────────
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
-// ── Cache ────────────────────────────────────────────────────────
+// ── CORS proxies for fetching BBC (which blocks cloud IPs) ──────
+const PROXY_URLS = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
 
+// ── In-memory cache ──────────────────────────────────────────────
 const cache = new Map<
   string,
-  {
-    data: {
-      title: string;
-      html: string;
-      image: string | null;
-      publishedTime: string | null;
-      author: string | null;
-    };
-    timestamp: number;
-  }
+  { data: { title: string; html: string; image: string | null; publishedTime: string | null; author: string | null }; timestamp: number }
 >();
-const CACHE_MS = 30 * 60 * 1000; // 30 min cache
+const CACHE_MS = 30 * 60 * 1000;
 
-// ── Image extraction ─────────────────────────────────────────────
+// ── Fetch with multiple fallback strategies ──────────────────────
 
-function extractFirstImage(html: string): string | null {
-  const ogMatch = html.match(
-    /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (ogMatch?.[1]) return ogMatch[1];
-  const twMatch = html.match(
-    /<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (twMatch?.[1]) return twMatch[1];
-  return null;
-}
+async function fetchHtml(url: string): Promise<{ html: string; source: string } | null> {
+  // Strategy 1: Direct fetch (works from Z.ai sandbox, some ISPs)
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      redirect: "follow",
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const text = await res.text();
+      if (text && text.length > 500) return { html: text, source: "direct" };
+    }
+  } catch (e) {
+    console.log("Direct fetch failed:", e instanceof Error ? e.message : "unknown");
+  }
 
-// ── Extract article body from BBC page HTML ──────────────────────
-
-function extractArticleBody(html: string): string {
-  let body = "";
-
-  // Try article tag first
-  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
-  if (articleMatch) {
-    body = articleMatch[1];
-  } else {
-    // Try main content area
-    const mainMatch = html.match(
-      /<div[^>]*(?:id|class)=["'][^"']*(?:story-body|article-body|main-content|body-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i
-    );
-    if (mainMatch) {
-      body = mainMatch[1];
-    } else {
-      // Fallback: collect substantial paragraphs
-      const pContent: string[] = [];
-      const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-      let pMatch;
-      let count = 0;
-      while ((pMatch = pRegex.exec(html)) !== null && count < 50) {
-        const text = pMatch[1].replace(/<[^>]*>/g, "").trim();
-        if (text.length > 40) {
-          pContent.push(pMatch[0]);
-          count++;
-        }
+  // Strategy 2: Try CORS proxies
+  for (const makeProxyUrl of PROXY_URLS) {
+    try {
+      const proxyUrl = makeProxyUrl(url);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(proxyUrl, {
+        signal: ctrl.signal,
+        headers: { Accept: "text/html,*/*" },
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.length > 500) return { html: text, source: "proxy" };
       }
-      if (pContent.length >= 3) {
-        body = pContent.join("\n");
-      }
+    } catch (e) {
+      console.log("Proxy fetch failed:", e instanceof Error ? e.message : "unknown");
     }
   }
 
-  return body;
+  return null;
 }
 
-// ── Extract title from HTML ──────────────────────────────────────
+// ── Extraction helpers ───────────────────────────────────────────
+
+function extractImage(html: string): string | null {
+  const og = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (og?.[1]) return og[1];
+  const tw = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+  return tw?.[1] || null;
+}
 
 function extractTitle(html: string): string {
-  const ogMatch = html.match(
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (ogMatch?.[1]) return ogMatch[1];
-
-  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  if (h1Match?.[1]) return h1Match[1].replace(/<[^>]*>/g, "").trim();
-
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  if (titleMatch?.[1]) return titleMatch[1].replace(/<[^>]*>/g, "").trim();
-
-  return "";
+  const og = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+  if (og?.[1]) return og[1];
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (h1?.[1]) return h1[1].replace(/<[^>]*>/g, "").trim();
+  const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return t?.[1]?.replace(/<[^>]*>/g, "").trim() || "";
 }
-
-// ── Extract author from HTML ─────────────────────────────────────
 
 function extractAuthor(html: string): string | null {
-  const authorMatch = html.match(
-    /<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (authorMatch?.[1]) return authorMatch[1];
-
-  const bylineMatch = html.match(
-    /<[^>]*(?:class|data-component)=["'][^"']*(?:byline|author)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i
-  );
-  if (bylineMatch?.[1]) return bylineMatch[1].replace(/<[^>]*>/g, "").trim();
-
-  return null;
+  const m = html.match(/<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i);
+  if (m?.[1]) return m[1];
+  const b = html.match(/<[^>]*(?:class|data-component)=["'][^"']*(?:byline|author)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i);
+  return b?.[1]?.replace(/<[^>]*>/g, "").trim() || null;
 }
 
-// ── Extract published time ───────────────────────────────────────
-
-function extractPublishedTime(html: string): string | null {
-  const timeMatch = html.match(
-    /<meta[^>]*property=["']article:published_time["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (timeMatch?.[1]) return timeMatch[1];
-
-  const dateMatch = html.match(
-    /<meta[^>]*itemprop=["']datePublished["'][^>]*content=["']([^"']+)["']/i
-  );
-  if (dateMatch?.[1]) return dateMatch[1];
-
-  return null;
+function extractTime(html: string): string | null {
+  const m = html.match(/<meta[^>]*property=["']article:published_time["'][^>]*content=["']([^"']+)["']/i);
+  if (m?.[1]) return m[1];
+  const d = html.match(/<meta[^>]*itemprop=["']datePublished["'][^>]*content=["']([^"']+)["']/i);
+  return d?.[1] || null;
 }
 
-// ── Aggressive HTML cleaning for article body ────────────────────
+function extractBody(html: string): string {
+  // Try <article> tag
+  const article = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (article) return article[1];
 
-const REMOVE_TAGS = [
-  "script", "style", "noscript", "svg", "nav", "header", "footer",
-  "aside", "form", "iframe", "button", "select", "textarea", "input", "label",
-];
+  // Try story-body / article-body div
+  const main = html.match(/<div[^>]*(?:id|class)=["'][^"']*(?:story-body|article-body|main-content|body-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
+  if (main) return main[1];
 
-const REMOVE_SELECTORS = [
-  /\bshare\b/i, /\bsharing\b/i, /\bsocial\b/i, /\bfacebook\b/i,
-  /\btwitter\b/i, /\bwhatsapp\b/i, /\bemail-share\b/i, /\bsend-to-friend\b/i,
-  /\bcopy-link\b/i, /\bshare-icon\b/i, /\bshare-button\b/i, /\bshare-tools\b/i,
-  /\bnav\b/i, /\bnavigation\b/i, /\bmenu\b/i, /\bsitemap\b/i,
-  /\bbreadcrumb\b/i, /\bcookie-banner\b/i, /\bconsent\b/i, /\bnotification\b/i,
-  /\bpromo\b/i, /\brelated\b/i, /\bmost-read\b/i, /\bmost-watched\b/i,
-  /\bmore-on\b/i, /\byou-might-like\b/i, /\brecommended\b/i, /\btrending\b/i,
-  /\bside\b/i, /\bsidebar\b/i, /\badvert/i, /\bad\b/i, /\bsponsor/i,
-  /\bcommercial\b/i, /\bcomments?\b/i, /\bresponse\b/i, /\bfeatures-belt\b/i,
-  /\bspecial-reports?\b/i, /\blive\b/i, /\bupdates\b/i, /\bnewsletter\b/i,
-  /\bsubscribe\b/i, /\bsign-up\b/i, /\bjoin-us\b/i, /\bmember/i,
-  /\bskip-link\b/i, /\bskip-to\b/i, /\boverlay\b/i, /\bmodal\b/i,
-  /\bpopup\b/i, /\btooltip\b/i, /\bprint\b/i, /\bbanner\b/i,
-  /\bbrand\b/i, /\bglobal-nav\b/i, /\bidentity\b/i, /\bhome-link\b/i,
+  // Fallback: collect substantial paragraphs
+  const ps: string[] = [];
+  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let m; let c = 0;
+  while ((m = re.exec(html)) !== null && c < 50) {
+    const txt = m[1].replace(/<[^>]*>/g, "").trim();
+    if (txt.length > 40) { ps.push(m[0]); c++; }
+  }
+  return ps.length >= 3 ? ps.join("\n") : "";
+}
+
+// ── HTML cleaning ────────────────────────────────────────────────
+
+const REMOVE_TAGS = ["script","style","noscript","svg","nav","header","footer","aside","form","iframe","button","select","textarea","input","label"];
+
+const REMOVE_PATTERNS = [
+  /\bshare\b/i,/\bsharing\b/i,/\bsocial\b/i,/\bfacebook\b/i,/\btwitter\b/i,
+  /\bwhatsapp\b/i,/\bemail-share\b/i,/\bsend-to-friend\b/i,/\bcopy-link\b/i,
+  /\bshare-icon\b/i,/\bshare-button\b/i,/\bshare-tools\b/i,/\bnav\b/i,
+  /\bnavigation\b/i,/\bmenu\b/i,/\bsitemap\b/i,/\bbreadcrumb\b/i,
+  /\bcookie-banner\b/i,/\bconsent\b/i,/\bnotification\b/i,/\bpromo\b/i,
+  /\brelated\b/i,/\bmost-read\b/i,/\bmost-watched\b/i,/\bmore-on\b/i,
+  /\byou-might-like\b/i,/\brecommended\b/i,/\btrending\b/i,/\bside\b/i,
+  /\bsidebar\b/i,/\badvert/i,/\bad\b/i,/\bsponsor/i,/\bcommercial\b/i,
+  /\bcomments?\b/i,/\bresponse\b/i,/\bfeatures-belt\b/i,/\bspecial-reports?\b/i,
+  /\blive\b/i,/\bupdates\b/i,/\bnewsletter\b/i,/\bsubscribe\b/i,
+  /\bsign-up\b/i,/\bjoin-us\b/i,/\bmember/i,/\bskip-link\b/i,/\bskip-to\b/i,
+  /\boverlay\b/i,/\bmodal\b/i,/\bpopup\b/i,/\btooltip\b/i,/\bprint\b/i,
+  /\bbanner\b/i,/\bbrand\b/i,/\bglobal-nav\b/i,/\bidentity\b/i,/\bhome-link\b/i,
   /\bcorrespondent\b/i,
 ];
 
-function cleanArticleHtml(rawHtml: string): string {
-  let html = rawHtml;
-
-  // 1. Remove unwanted tags
+function cleanHtml(raw: string): string {
+  let h = raw;
   for (const tag of REMOVE_TAGS) {
-    html = html.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"), "");
-    html = html.replace(new RegExp(`<${tag}[^>]*\\/?>`, "gi"), "");
+    h = h.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"), "");
+    h = h.replace(new RegExp(`<${tag}[^>]*\\/?>`, "gi"), "");
   }
-
-  // 2. Remove comments
-  html = html.replace(/<!--[\s\S]*?-->/g, "");
-
-  // 3. Remove data attributes
-  html = html.replace(/\s+data-[\w-]+=["'][^"']*["']/gi, "");
-  html = html.replace(/\s+data-[\w-]+=\{[^}]*\}/gi, "");
-
-  // 4. Remove elements with matching class/id patterns
-  for (const pattern of REMOVE_SELECTORS) {
-    html = html.replace(
-      new RegExp(
-        `<[^>]*(?:class|id)=["'][^"']*(?:${pattern.source})[^"']*["'][^>]*>[\\s\\S]*?<\\/[^>]+>`,
-        "gi"
-      ),
-      ""
+  h = h.replace(/<!--[\s\S]*?-->/g, "");
+  h = h.replace(/\s+data-[\w-]+=["'][^"']*["']/gi, "");
+  h = h.replace(/\s+data-[\w-]+=\{[^}]*\}/gi, "");
+  for (const p of REMOVE_PATTERNS) {
+    h = h.replace(new RegExp(`<[^>]*(?:class|id)=["'][^"']*(?:${p.source})[^"']*["'][^>]*>[\\s\\S]*?<\\/[^>]+>`, "gi"), "");
+  }
+  h = h.replace(/<p[^>]*>\s*(?:&nbsp;|\s)*\s*<\/p>/gi, "");
+  h = h.replace(/<div[^>]*>\s*<\/div>/gi, "");
+  h = h.replace(/<span[^>]*>\s*<\/span>/gi, "");
+  h = h.replace(/<hr[^>]*\/?>/gi, "");
+  h = h.replace(/<a[^>]*(?:facebook|twitter|whatsapp|linkedin|pinterest|email|share|reddit|telegram)[^>]*>[\s\S]*?<\/a>/gi, "");
+  h = h.replace(/<img([^>]*?)src=["']([^"']+)["']([^>]*?)\/?>/gi, (_, __, src) => {
+    const alt = _?.match(/alt=["']([^"']+)["']/i);
+    return `<img src="${src}" ${alt ? `alt="${alt[1]}"` : 'alt=""'} loading="lazy" />`;
+  });
+  h = h.replace(/<figure[^>]*>([\s\S]*?)<\/figure>/gi, (_, c) => {
+    const img = c.match(/<img[^>]*>/i);
+    if (!img) return "";
+    const cap = c.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+    return `<div class="my-6">${img[0]}${cap ? `<p class="text-sm text-muted-foreground italic mt-1 mb-4">${cap[1].trim()}</p>` : ""}</div>`;
+  });
+  h = h.replace(/<p[^>]*>\s*<strong[^>]*>([\s\S]*?)<\/strong>\s*<\/p>/gi, (_, t) =>
+    t.length < 100 ? `<h3 class="text-lg font-bold mt-6 mb-3">${t}</h3>` : `<p><strong>${t}</strong></p>`
+  );
+  h = h.replace(/<p[^>]*>\s*/gi, "<p>");
+  h = h.replace(/\s*<\/p>/gi, "</p>");
+  let prev = ""; let max = 10;
+  while (prev !== h && max-- > 0) {
+    prev = h;
+    h = h.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, (_, c) =>
+      c.trim() && !c.match(/<(?:div|p|h[1-6]|ul|ol|li|table|section|article)/i) ? c.trim() : `<div>${c}</div>`
     );
   }
-
-  // 5. Remove empty elements
-  html = html.replace(/<p[^>]*>\s*(?:&nbsp;|\s)*\s*<\/p>/gi, "");
-  html = html.replace(/<div[^>]*>\s*<\/div>/gi, "");
-  html = html.replace(/<span[^>]*>\s*<\/span>/gi, "");
-
-  // 6. Remove decorative elements
-  html = html.replace(/<hr[^>]*\/?>/gi, "");
-
-  // 7. Remove social links
-  html = html.replace(
-    /<a[^>]*(?:facebook|twitter|whatsapp|linkedin|pinterest|email|share|reddit|telegram)[^>]*>[\s\S]*?<\/a>/gi,
-    ""
-  );
-
-  // 8. Clean up image tags
-  html = html.replace(
-    /<img([^>]*?)src=["']([^"']+)["']([^>]*?)\/?>/gi,
-    (match, _before, src) => {
-      const altMatch = match.match(/alt=["']([^"']+)["']/i);
-      const alt = altMatch ? `alt="${altMatch[1]}"` : 'alt=""';
-      return `<img src="${src}" ${alt} loading="lazy" />`;
-    }
-  );
-
-  // 9. Clean up figure/figcaption
-  html = html.replace(
-    /<figure[^>]*>([\s\S]*?)<\/figure>/gi,
-    (_, content) => {
-      const imgMatch = content.match(/<img[^>]*>/i);
-      if (!imgMatch) return "";
-      const captionMatch = content.match(
-        /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i
-      );
-      const caption = captionMatch
-        ? `<p class="text-sm text-muted-foreground italic mt-1 mb-4">${captionMatch[1].trim()}</p>`
-        : "";
-      return `<div class="my-6">${imgMatch[0]}${caption}</div>`;
-    }
-  );
-
-  // 10. Short bold paragraphs → headers
-  html = html.replace(
-    /<p[^>]*>\s*<strong[^>]*>([\s\S]*?)<\/strong>\s*<\/p>/gi,
-    (_, text) => {
-      if (text.length < 100) {
-        return `<h3 class="text-lg font-bold mt-6 mb-3">${text}</h3>`;
-      }
-      return `<p><strong>${text}</strong></p>`;
-    }
-  );
-
-  // 11. Clean paragraph spacing
-  html = html.replace(/<p[^>]*>\s*/gi, "<p>");
-  html = html.replace(/\s*<\/p>/gi, "</p>");
-
-  // 12. Unwrap excessive nested divs
-  let prevHtml = "";
-  let maxIterations = 10;
-  while (prevHtml !== html && maxIterations > 0) {
-    prevHtml = html;
-    html = html.replace(
-      /<div[^>]*>([\s\S]*?)<\/div>/g,
-      (_, content) => {
-        if (
-          content.trim() &&
-          !content.match(/<(?:div|p|h[1-6]|ul|ol|li|table|section|article)/i)
-        ) {
-          return content.trim();
-        }
-        return `<div>${content}</div>`;
-      }
-    );
-    maxIterations--;
-  }
-
-  // 13. Replace BBC references
-  html = html.replace(/\bBBC\b/g, "SaveitBro News");
-  html = html.replace(/\bBritish Broadcasting Corporation\b/g, "SaveitBro News");
-
-  // 14. Remove empty/invalid anchors
-  html = html.replace(/<a[^>]*>\s*<\/a>/gi, "");
-  html = html.replace(/<a[^>]*(?:href=["']#["']|href=["']javascript:[^"']*["'])[^>]*>[\s\S]*?<\/a>/gi, "");
-
-  // 15. Clean whitespace
-  html = html.replace(/\n{3,}/g, "\n\n");
-  html = html.replace(/  +/g, " ");
-
-  return html.trim();
+  h = h.replace(/\bBBC\b/g, "SaveitBro News");
+  h = h.replace(/\bBritish Broadcasting Corporation\b/g, "SaveitBro News");
+  h = h.replace(/<a[^>]*>\s*<\/a>/gi, "");
+  h = h.replace(/<a[^>]*(?:href=["']#["']|href=["']javascript:[^"']*["'])[^>]*>[\s\S]*?<\/a>/gi, "");
+  h = h.replace(/\n{3,}/g, "\n\n").replace(/  +/g, " ");
+  return h.trim();
 }
 
-// ── Main GET handler ─────────────────────────────────────────────
+// ── Main handler ─────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   try {
@@ -273,18 +194,10 @@ export async function GET(request: NextRequest) {
     const nocache = searchParams.get("nocache") === "true";
 
     if (!url) {
-      return NextResponse.json(
-        { success: false, error: "URL parameter is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "URL parameter is required" }, { status: 400 });
     }
-
-    // Only allow trusted news URLs
     if (!url.includes("bbc.co.uk") && !url.includes("bbc.com")) {
-      return NextResponse.json(
-        { success: false, error: "Only supported news articles can be loaded" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Only supported news articles can be loaded" }, { status: 400 });
     }
 
     // Check cache
@@ -295,60 +208,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch article HTML directly — works on ANY hosting platform (Vercel, Netlify, etc.)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        redirect: "follow",
-      });
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      const msg = fetchError instanceof Error ? fetchError.message : "Unknown error";
-      console.error("Fetch error:", msg);
+    // Fetch HTML with fallback strategies
+    const result = await fetchHtml(url);
+    if (!result) {
       return NextResponse.json(
-        { success: false, error: `Network error fetching article: ${msg}` },
-        { status: 502 }
-      );
-    }
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { success: false, error: `Article page returned HTTP ${response.status}` },
+        { success: false, error: "Could not reach the article. Please try the 'Read Original' button to open it directly." },
         { status: 502 }
       );
     }
 
-    const rawHtml = await response.text();
+    const rawHtml = result.html;
 
-    if (!rawHtml || rawHtml.length < 200) {
-      return NextResponse.json(
-        { success: false, error: "Article page returned empty content" },
-        { status: 502 }
-      );
-    }
-
-    // Extract structured data
+    // Extract and clean
     const title = extractTitle(rawHtml);
     const author = extractAuthor(rawHtml);
-    const publishedTime = extractPublishedTime(rawHtml);
-    const image = extractFirstImage(rawHtml);
+    const publishedTime = extractTime(rawHtml);
+    const image = extractImage(rawHtml);
+    const bodyHtml = extractBody(rawHtml);
+    const html = cleanHtml(bodyHtml);
 
-    // Extract and clean article body
-    const bodyHtml = extractArticleBody(rawHtml);
-    const html = cleanArticleHtml(bodyHtml);
-
-    // Store in cache
     const responseData = { title, html, image, publishedTime, author };
     cache.set(url, { data: responseData, timestamp: Date.now() });
 

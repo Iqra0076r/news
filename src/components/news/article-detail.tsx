@@ -288,14 +288,24 @@ export function ArticleDetail() {
               <div className="flex flex-col items-center py-8 text-center">
                 <AlertCircle className="h-10 w-10 text-destructive mb-3" />
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetry}
-                  className="rounded-lg gap-2"
-                >
-                  Retry
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRetry}
+                    className="rounded-lg gap-2"
+                  >
+                    Retry
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(selectedArticle.url, "_blank")}
+                    className="rounded-lg gap-2 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Read Original
+                  </Button>
+                </div>
               </div>
             )}
 
