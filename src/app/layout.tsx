@@ -208,8 +208,7 @@ export default function RootLayout({
         {/* Prevent search engines from showing a cached version */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-        {/* Media.net Publisher Verification — replace VERIFICATION_ID with your actual ID */}
-        {/* <meta name="media.net_verification" content="VERIFICATION_ID" /> */}
+        {/* HilltopAds Publisher ID: 25f22cc3711edbecd5b0 */}
 
         {/* Content classification for advertisers */}
         <meta name="rating" content="general" />

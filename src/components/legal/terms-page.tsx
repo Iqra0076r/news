@@ -290,7 +290,7 @@ export function TermsPage() {
             </p>
             <ul className="space-y-2 ml-1">
               {[
-                "Media.net (powered by the Yahoo! Bing Network) — contextual and behavioral advertising",
+                "HilltopAds (powered by the Yahoo! Bing Network) — contextual and behavioral advertising",
                 "Google AdSense — display and interest-based advertising",
               ].map((item) => (
                 <li key={item} className="flex gap-2 text-sm text-muted-foreground">

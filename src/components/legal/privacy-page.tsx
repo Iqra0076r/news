@@ -162,7 +162,7 @@ export function PrivacyPage() {
                 },
                 {
                   title: "Advertising",
-                  desc: "To display advertisements on our website through our advertising partners, including Media.net, and to serve relevant ads based on your browsing activity and interests.",
+                  desc: "To display advertisements on our website through our advertising partners, including HilltopAds, and to serve relevant ads based on your browsing activity and interests.",
                 },
                 {
                   title: "Analytics",
@@ -241,7 +241,7 @@ export function PrivacyPage() {
                     <h4 className="text-sm font-semibold">Advertising / Targeting Cookies</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       These cookies are used by our advertising partners, including
-                      Media.net, to deliver personalized advertisements based on your
+                      hilltopads.com, to deliver personalized advertisements based on your
                       browsing behavior and interests. They may also be used by
                       advertising networks to build a profile of your interests and
                       show you relevant ads on other websites. These cookies track
@@ -272,7 +272,7 @@ export function PrivacyPage() {
                 <ul className="space-y-2 mt-2 ml-1">
                   {[
                     {
-                      name: "Media.net (Yahoo! / Bing Network)",
+                      name: "hilltopads.com (Yahoo! / Bing Network)",
                       purpose: "Serving and measuring the performance of advertisements, interest-based targeting, frequency capping, and ad fraud prevention.",
                     },
                     {
@@ -316,12 +316,12 @@ export function PrivacyPage() {
 
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                <h3 className="text-sm font-semibold">5.1 Media.net — Advertising Partner</h3>
+                <h3 className="text-sm font-semibold">5.1 hilltopads.com — Advertising Partner</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  We use Media.net as our primary advertising partner to display
-                  advertisements on our website. Media.net is a leading contextual
+                  We use hilltopads.com as our primary advertising partner to display
+                  advertisements on our website. hilltopads.com is a leading contextual
                   advertising technology company powered by the Yahoo! Bing Network.
-                  When you visit our website, Media.net may use cookies, web beacons,
+                  When you visit our website, hilltopads.com may use cookies, web beacons,
                   and similar technologies to:
                 </p>
                 <ul className="space-y-1 ml-1">
@@ -340,14 +340,14 @@ export function PrivacyPage() {
                   ))}
                 </ul>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                  For more information about Media.net&apos;s privacy practices, please visit{" "}
+                  For more information about hilltopads.com&apos;s privacy practices, please visit{" "}
                   <a
-                    href="https://www.media.net/privacy-policy"
+                    href="https://www.hilltopads.com/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-red-600 dark:text-red-400 hover:underline"
                   >
-                    media.net/privacy-policy
+                    hilltopads.com/privacy-policy
                   </a>.
                 </p>
               </div>
@@ -410,7 +410,7 @@ export function PrivacyPage() {
                 <h3 className="text-sm font-semibold mb-2">6.1 How It Works</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   When you visit our website, our advertising partners (including
-                  Media.net and Google) may place cookies on your device to:
+                  hilltopads.com and Google) may place cookies on your device to:
                 </p>
                 <ul className="space-y-2 mt-2 ml-1">
                   {[
@@ -429,15 +429,15 @@ export function PrivacyPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold mb-2">6.2 Media.net Advertising</h3>
+                <h3 className="text-sm font-semibold mb-2">6.2 hilltopads.com Advertising</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Media.net serves contextual and behavioral advertisements on our
-                  platform. Media.net&apos;s advertising technology considers:
+                  hilltopads.com serves contextual and behavioral advertisements on our
+                  platform. hilltopads.com&apos;s advertising technology considers:
                 </p>
                 <ul className="space-y-2 mt-2 ml-1">
                   {[
                     "The content of the page you are currently viewing (contextual targeting)",
-                    "Your recent browsing activity across sites in the Media.net network",
+                    "Your recent browsing activity across sites in the hilltopads.com network",
                     "Your geographic location",
                     "Your device type and browser",
                     "General interest categories inferred from your online activity",
@@ -449,7 +449,7 @@ export function PrivacyPage() {
                   ))}
                 </ul>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                  Media.net does not collect personally identifiable information
+                  hilltopads.com does not collect personally identifiable information
                   (such as your name, email address, or phone number) for
                   advertising purposes.
                 </p>
@@ -527,14 +527,14 @@ export function PrivacyPage() {
                   <li className="flex gap-2 text-sm text-muted-foreground">
                     <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-600/60 dark:bg-red-400/60" />
                     <span>
-                      <span className="font-medium text-foreground">Media.net:</span> Visit{" "}
+                      <span className="font-medium text-foreground">hilltopads.com:</span> Visit{" "}
                       <a
-                        href="https://www.media.net/privacy-policy"
+                        href="https://www.hilltopads.com/privacy-policy"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-red-600 dark:text-red-400 hover:underline"
                       >
-                        media.net/privacy-policy
+                        hilltopads.com/privacy-policy
                       </a>{" "}
                       for opt-out instructions
                     </span>
@@ -622,7 +622,7 @@ export function PrivacyPage() {
                 "Analytics data collected via Google Analytics is retained for 26 months (Google's default retention period).",
                 "Cookie consent preferences are stored in your browser and persist until cleared.",
                 "Contact form submissions are retained for up to 12 months for support purposes.",
-                "Data shared with our advertising partners (Media.net, Google) is subject to their own retention policies.",
+                "Data shared with our advertising partners (hilltopads.com, Google) is subject to their own retention policies.",
               ].map((item) => (
                 <li key={item} className="flex gap-2 text-sm text-muted-foreground">
                   <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-600/60 dark:bg-red-400/60" />
@@ -711,7 +711,7 @@ export function PrivacyPage() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Our Service is operated from India and may involve the transfer of
               your information to other countries where our service providers
-              (including Media.net and Google) operate. These countries may have
+              (including HilltopAds and Google) operate. These countries may have
               data protection laws that differ from your jurisdiction. By using our
               Service, you consent to such transfers. We take appropriate measures
               to ensure that your data is handled in accordance with this Privacy

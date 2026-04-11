@@ -267,3 +267,32 @@ Stage Summary:
 - Footer links fully functional
 - Media.net publisher meta tags in place
 - Clean lint (0 errors), all routes returning 200
+
+---
+Task ID: 8
+Agent: Main Agent
+Task: Switch ad network integration from Media.net to HilltopAds
+
+Work Log:
+- Read uploaded file containing HilltopAds publisher zone ID: 25f22cc3711edbecd5b0
+- Rewrote `src/components/ads/ad-slot.tsx`:
+  - Replaced all Media.net references with HilltopAds
+  - Added publisher zone ID constant: 25f22cc3711edbecd5b0
+  - Created ZONE_IDS mapping for 6 ad placements (header, sidebar, content, content-2, article, footer)
+  - Added detailed integration instructions as code comments
+  - Added InContentAd2 component (second in-content ad between Business & Sport)
+  - Each slot has clear HTML comment showing where to paste HilltopAds ad tags
+- Updated `src/app/layout.tsx`:
+  - Replaced Media.net verification meta tag with HilltopAds publisher ID comment
+- Updated `src/components/legal/privacy-page.tsx`:
+  - Replaced all 17 "Media.net" references with "HilltopAds" / "hilltopads.com"
+  - Updated privacy policy URLs to point to hilltopads.com/privacy-policy
+- Updated `src/components/legal/terms-page.tsx`:
+  - Replaced Media.net reference with HilltopAds
+
+Stage Summary:
+- All ad slots configured with HilltopAds publisher zone ID 25f22cc3711edbecd5b0
+- 6 ad placement slots ready (header 728x90, sidebar 300x250, 2x in-content 728x90, in-article fluid, footer 728x90)
+- Privacy Policy and Terms of Service reference HilltopAds throughout
+- Zero Media.net references remain in codebase
+- Clean lint (0 errors), homepage returning 200
