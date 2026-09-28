@@ -68,7 +68,7 @@ async function main(){
     generated++;
     const evidence=content.split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(x=>x.length>45&&x.length<800).slice(0,35);
     const selection=await llm(basePrompt+' Select 5 to 8 sentence IDs that contain the main news facts. Return {"sentence_ids":[integer],"sensitive":boolean,"uncertainties":[string]}. Do not write or paraphrase any facts. Sensitive=true for crime, allegations, elections, deaths, disasters, investment advice, medical treatment or health claims.',{title,sentences:evidence.map((sentence,id)=>({id,sentence}))},350);
-    const ids=[...new Set(selection.sentence_ids||[])].filter(id=>Number.isInteger(id)&&id>=0&&id<evidence.length);
+    const ids=[...new Set(selection.sentence_ids||[])].filter(id=>Number.isInteger(id)&&id>=0&&id<evidence.length).slice(0,8);
     if(ids.length<3)throw new Error('Insufficient grounded evidence');
     const facts={source_title:title,facts:ids.map(id=>({statement:evidence[id],evidence:evidence[id]})),sensitive:selection.sensitive===true,uncertainties:selection.uncertainties||[]};
     const near=state.articles.filter(a=>similarity(a.headline,title)>.2).slice(0,4);
@@ -80,7 +80,11 @@ async function main(){
     }
     const verification=await llm(basePrompt+' Independently compare EVERY claim in the article against the original evidence. Reject added names, numbers, certainty, causes or claims. Return {"supported":boolean,"notes":string,"unsupported_claims":[string]}. A claim not supported by evidence must cause supported=false.',{evidence:content,article:draft},500);
     const sensitive=facts.sensitive||source.category==='Health'||/\b(killed|death|arrest|convict|election|cancer|treatment|interest rate|inflation|mortgage)\b/i.test(title);
-    const status=verification.supported===true&&!(verification.unsupported_claims||[]).length&&!sensitive?'published':'review';
+    const sourceWords=content.toLowerCase().match(/[a-z0-9]+/g)||[],draftWords=draft.body.toLowerCase().match(/[a-z0-9]+/g)||[];
+    const sourcePhrases=new Set(sourceWords.slice(0,-7).map((_,i)=>sourceWords.slice(i,i+8).join(' ')));
+    const copied=draftWords.slice(0,-7).filter((_,i)=>sourcePhrases.has(draftWords.slice(i,i+8).join(' '))).length/Math.max(1,draftWords.length-7);
+    verification.source_phrase_overlap=Math.round(copied*100)/100;
+    const status=copied<.35&&verification.supported===true&&!(verification.unsupported_claims||[]).length&&!sensitive?'published':'review';
     const image=imageFor(html,source);const cluster=hash(title.toLowerCase().replace(/[^a-z0-9]/g,''));
     const article={...draft,...image,slug:slug(draft.headline)+'-'+fp.slice(0,8),category:/robot|software|aircraft|technology/i.test(title)?'Technology':source.category,status,published_at:date.toISOString(),seo_title:draft.headline,seo_description:draft.standfirst.slice(0,160),cluster_id:cluster};
     const saved=await runner('publish',{run_id:state.id,article,verification});
