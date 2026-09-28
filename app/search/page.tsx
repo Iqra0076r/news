@@ -1,3 +1,3 @@
-import { getArticles } from '@/lib/db';
-import { StoryCard } from '@/components/StoryCard';
-export default async function Search({searchParams}:{searchParams:Promise<{q?:string}>}){const {q=''}=await searchParams;const rows=q?await getArticles({query:q,limit:30}):[];return <main><div className="pageHead"><div className="shell"><div className="kicker">Discover</div><h1>Search</h1><form className="searchForm"><input name="q" defaultValue={q} placeholder="Search stories, topics and sections…"/><button>Search</button></form></div></div><section className="mainSection shell">{q&&<div className="sectionTitle"><h2>{rows.length} results for “{q}”</h2></div>}<div className="grid3">{rows.map(a=><StoryCard key={a.id} article={a}/>)}</div></section></main>}
+import {Search} from '@/components/Search';
+export const metadata={title:'Search',robots:{index:false,follow:true}};
+export default function Page(){return <Search/>;}

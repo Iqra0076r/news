@@ -1,1 +1,2 @@
 'use client';export default function ErrorPage({reset}:{reset:()=>void}){return <main className="pageHead"><div className="shell"><div className="kicker">Error</div><h1>Something went wrong.</h1><p>The newsroom could not load this page.</p><button className="btn" onClick={reset} style={{padding:'12px 18px'}}>Try again</button></div></main>}
+

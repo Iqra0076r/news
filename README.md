@@ -1,55 +1,58 @@
-# Atlas Newsroom
+# BingNews
 
-Production-oriented autonomous news website built with Next.js 16.3.6 + React 19.3.
+A Next.js/React newsroom with real Supabase data, full internal articles, search, private editing, and a scheduled source-to-publication workflow. All article links open a new tab. The public website is exported to indexable HTML for GitHub Pages; Supabase Edge Functions handle authenticated editing and database operations.
 
-## What is implemented
+## Current deployment
 
-- Premium responsive newsroom homepage, category pages, search and internal article pages.
-- `NewsArticle` JSON-LD, canonical metadata, Open Graph, robots, standard sitemap and 48-hour Google News sitemap.
-- 30-minute protected ingestion endpoint and GitHub Actions scheduler.
-- RSS/Atom feed ingestion for approved feeds only.
-- URL/GUID fingerprint deduplication plus near-duplicate headline similarity.
-- AI article generation with a fact-constrained prompt through either the OpenAI Responses API or local Ollama.
-- Automatic rejection when the AI cannot support an article from the supplied fact pack.
-- Source provenance stored privately; upstream outlet names are not rendered publicly.
-- Feed-level licensing controls: sources requiring public attribution are skipped when the product policy forbids visible source names.
-- Image reuse flag per source; otherwise a high-resolution site-owned editorial SVG illustration is generated.
-- Supabase/PostgreSQL migration and REST data adapter.
-- Secure cron secret and simple signed-cookie admin authentication.
-- Demo mode that works without external services and is disabled by setting `DEMO_MODE=false`.
+- Repository: https://github.com/Iqra0076r/news
+- Intended public URL: https://iqra0076r.github.io/news/
+- Supabase project: Flarewire Automation, isolated `bn_*` tables and `bingnews_private` schema.
+- The public deployment still needs the BingNews pull request merged and the first Actions run verified. Do not describe the schedule as live before that run completes.
+- Five real initial reports have been editorially synthesized from official material. There are no fictional demo stories or fallback demo database records.
 
-## Local start
+## Run locally
 
-1. Copy `.env.example` to `.env.local`.
-2. Keep `DEMO_MODE=true` for the immediate UI/demo.
-3. Run `npm install`.
-4. Run `npm run dev`.
-5. Open `http://localhost:3000`.
-6. For a home-PC scheduler, set `SITE_URL` + `CRON_SECRET` and run `npm run scheduler` in a second terminal. It calls the ingestion endpoint immediately and every 30 minutes thereafter.
+Node 22+ and npm are required.
 
-## Production activation
+```sh
+npm ci
+npm run snapshot
+npm test
+npm run typecheck
+npm run build
+npm run dev
+```
 
-1. Create a Supabase project and execute `supabase/migrations/001_init.sql`.
-2. Set `NEXT_PUBLIC_SUPABASE_URL` and the server-only `SUPABASE_SERVICE_ROLE_KEY`.
-3. Choose the writing engine: set `AI_PROVIDER=openai` with `OPENAI_API_KEY`, or `AI_PROVIDER=ollama` with a locally running Ollama model for a no-API-cost setup.
-4. Set `CRON_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `SESSION_SECRET`.
-5. Configure `NEWS_FEEDS_JSON` only with feeds/APIs whose terms permit the intended use. `publicAttributionRequired:true` causes the current ingestion policy to skip that feed.
-6. Set `DEMO_MODE=false`.
-7. In GitHub repository secrets, add `SITE_URL` and `CRON_SECRET` for `.github/workflows/news-fetch.yml`.
-8. Deploy to a Node-compatible Next.js host. The GitHub scheduler will call `/api/cron/news` every 30 minutes.
+Open `/news/` on the local development server. The snapshot uses a public publishable key protected by RLS. It contains only published editorial fields; source provenance, contacts and logs remain private.
 
-## Important publishing rule
+## Automatic publishing
 
-The system intentionally does not bypass paywalls or scrape full publisher articles. It works from approved feeds/APIs and their supplied factual summaries. Source provenance is stored in the database for auditing even when the source brand is not rendered in the public UI. If a feed requires public attribution, either allow that attribution in your editorial policy or do not ingest the feed.
+`.github/workflows/news.yml` runs on main pushes, manual dispatch and `*/30 * * * *`. GitHub schedules may be delayed and public-repository schedules can be disabled after inactivity. Each run fetches enabled sources, removes exact and near duplicates, extracts evidence-grounded facts, performs semantic event comparison when needed, drafts reports, validates numbers and runs a separate model verification. Sensitive topics and failed verification go to review. A database lock prevents overlapping processing; expiry lets a later run recover from a crashed worker.
 
-## Next production hardening steps
+The workflow uses an open Qwen2.5-1.5B model locally with llama.cpp, not the retired GitHub Models API. No paid model API or permanent server is required. GitHub's hosted-runner availability and quotas still apply. The model and Python wheel are cached. Default processing is limited to three candidate reports per run to bound CPU time; polling every 30 minutes does not mean a new report will necessarily be published every 30 minutes. A failed item remains eligible for retry, and a failed source does not stop the rest.
 
-For high-volume operation, add distributed locking, a durable queue, embeddings/pgvector for semantic story clustering, comprehensive admin CRUD, article-version restore UI, source-health dashboards, metrics and image downloading to owned storage instead of external URLs.
+A short-lived GitHub OIDC token authenticates database writes. The Edge Function restricts the token by issuer, audience, repository ID, main branch and workflow path. No service-role key is stored in GitHub or browser bundles.
 
+## Editorial administration
 
-## GitHub Actions status
+Open `/news/admin/`. The configured administrator email is stored privately in Supabase. Email OTP sign-in requires Supabase Auth to deliver mail to that address; the default Supabase mail service may restrict recipients. This delivery must be verified before declaring administrator sign-in operational. An administrator can edit published/review articles, change status and imagery, flag breaking stories, restore versions, pause sources and read fetch errors and contact messages.
 
-- **Build and validate newsroom** runs on every push and pull request to `main` and can also be started manually.
-- **Fetch news every 30 minutes** runs on `*/30 * * * *` and can also be started manually.
-- The fetch workflow requires repository secrets named `SITE_URL` and `CRON_SECRET`. `CRON_SECRET` must exactly match the value configured on the deployed Next.js server.
-- GitHub stores the source code and runs automation; the dynamic Next.js application itself must run on a Node-compatible host because the ingestion API and admin/server routes cannot run on static GitHub Pages.
+Changes reach the static public edition on the next successful publishing run. An immediate live check hides a withdrawn story in browsers; the old HTML can persist until rebuilding. This is an explicit limitation of free static hosting. All public reads enforce published status at the database level.
+
+## Sources and images
+
+Initial feeds are official NASA, Federal Reserve, NIH and NSF endpoints. They must pass fetch and content checks; availability is visible in the newsroom. Medical and financial claims are held for review. Source and image rights must be reviewed when expanding the list. NASA photo credits are retained and images with detected third-party credits are excluded. Image-credit heuristics are conservative but do not replace editorial rights review. A typography-based category graphic replaces unavailable photographs.
+
+## Security
+
+`public.bn_articles` and `public.bn_categories` use RLS with anonymous read-only access. Private tables are outside exposed schemas. Privileged RPCs grant execution only to the service role. The admin API validates confirmed Supabase users against a private email allowlist. Public contacts have server-side validation and an IP-derived daily submission limit. No raw IP is stored in application analytics. React renders plain text article bodies instead of raw HTML.
+
+## Scope and verification limits
+
+The current implementation covers the core publication workflow, not every extension in the supplied master brief. Dedicated embedding indexes, automatic material-update merging, category/source creation UI, a redirect registry, scheduled editorial releases, image derivative storage, full analytics dashboards and newsletter delivery are not implemented. Automated verification is fallible, especially with a small CPU model, and does not establish the truth of an external source. Use review for high-impact reporting.
+
+Tests exercise URL normalization, near-duplicate distinction, full RSS extraction, numerical fact guards and outbound-host restrictions. Type checking and the production build must pass before publication. The GitHub OIDC end-to-end workflow and email OTP still need live verification after approval to publish.
+
+## Database and rollback
+
+`supabase/bingnews-schema.sql` and `supabase/bingnews-contact.sql` record applied schema changes. The existing legacy `001_init.sql` is not used by BingNews and must not be applied to this project. New work uses namespaced tables to avoid changing other applications. Revert the publication commit to restore the previous site; preserve database records for audit or export before any destructive cleanup.

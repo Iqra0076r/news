@@ -1,15 +1,18 @@
 {
-  "name": "atlas-newsroom",
+  "name": "bingnews",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "scheduler": "node scripts/scheduler.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "BINGNEWS_TEST=1 node --test tests/*.test.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "ingest": "node scripts/pipeline.mjs"
   },
   "dependencies": {
+    "cheerio": "1.1.2",
+    "fast-xml-parser": "5.5.1",
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
