@@ -1,0 +1,72 @@
+name: BingNews — fetch, verify and publish
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: bingnews-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            models
+            ~/.cache/pip
+          key: bingnews-qwen15-v1
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - name: Install local inference engine
+        run: |
+          pip install 'llama-cpp-python==0.3.35' --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --only-binary=:all:
+      - name: Download open newsroom model
+        run: |
+          mkdir -p models
+          if [ ! -s models/newsroom.gguf ]; then
+            curl --fail --location --retry 3 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf' -o models/newsroom.gguf
+          fi
+      - name: Fetch real sources and verify reports
+        id: ingest
+        continue-on-error: true
+        env:
+          MAX_STORIES: '3'
+        run: npm run ingest
+      - name: Read published database records
+        run: npm run snapshot
+      - name: Type check
+        run: npm run typecheck
+      - name: Build indexable news pages
+        env:
+          NEXT_PUBLIC_SITE_URL: https://iqra0076r.github.io/news
+          NEXT_PUBLIC_SITE_NAME: BingNews
+        run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: out
+      - name: Publish BingNews
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Report ingestion failure
+        if: steps.ingest.outcome == 'failure'
+        run: echo '::warning::The fetcher failed; the last verified database edition was published. Review newsroom logs.'

@@ -1,45 +1,18 @@
-name: Build and validate newsroom
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
+name: BingNews checks
+on: [pull_request]
 permissions:
   contents: read
-
 jobs:
-  build:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      NEXT_PUBLIC_SITE_URL: https://example.com
-      NEXT_PUBLIC_SITE_NAME: Atlas Newsroom
-      DEMO_MODE: "true"
-      AI_PROVIDER: openai
-      OPENAI_MODEL: gpt-5.6
-      CRON_SECRET: ci-only-placeholder-secret
-      ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD: ci-only-placeholder-password
-      SESSION_SECRET: ci-only-placeholder-session-secret
-      NEWS_FEEDS_JSON: "[]"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: npm
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Production build
-        run: npm run build
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run snapshot
+      - run: npm run typecheck
+      - run: npm run build

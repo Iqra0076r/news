@@ -1,0 +1,2 @@
+import type {Article} from './types';
+export function fromRow(r:any):Article{return {id:r.id,slug:r.slug,headline:r.headline,standfirst:r.standfirst,body:r.body,category:r.category,tags:r.tags||[],author:r.author,publishedAt:r.published_at,modifiedAt:r.modified_at,imageUrl:r.image_url,imageAlt:r.image_alt,imageCredit:r.image_credit,featured:r.featured,breaking:!!r.breaking_until&&new Date(r.breaking_until)>new Date(),status:r.status,seoTitle:r.seo_title,seoDescription:r.seo_description};}

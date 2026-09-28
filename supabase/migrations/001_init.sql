@@ -37,3 +37,4 @@ create table if not exists public.article_versions (
   id uuid primary key default gen_random_uuid(), article_id uuid not null references public.articles(id) on delete cascade,
   created_at timestamptz not null default now(), headline text not null, standfirst text not null, body text not null, editor text
 );
+

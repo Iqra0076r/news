@@ -1,1 +1,2 @@
 import { PolicyPage } from '@/components/PolicyPage';export const metadata={title:'Copyright & Rights'};export default function Page(){return <PolicyPage kicker="Rights" title="Copyright and rights requests"><p>The newsroom should publish only material it is entitled to use. Rights holders may request review of text, photographs or other media through the contact channel.</p><p>Private provenance records are retained so disputed material can be traced to the relevant ingest item, feed configuration and publication event.</p></PolicyPage>}
+
