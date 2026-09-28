@@ -45,3 +45,11 @@ The system intentionally does not bypass paywalls or scrape full publisher artic
 ## Next production hardening steps
 
 For high-volume operation, add distributed locking, a durable queue, embeddings/pgvector for semantic story clustering, comprehensive admin CRUD, article-version restore UI, source-health dashboards, metrics and image downloading to owned storage instead of external URLs.
+
+
+## GitHub Actions status
+
+- **Build and validate newsroom** runs on every push and pull request to `main` and can also be started manually.
+- **Fetch news every 30 minutes** runs on `*/30 * * * *` and can also be started manually.
+- The fetch workflow requires repository secrets named `SITE_URL` and `CRON_SECRET`. `CRON_SECRET` must exactly match the value configured on the deployed Next.js server.
+- GitHub stores the source code and runs automation; the dynamic Next.js application itself must run on a Node-compatible host because the ingestion API and admin/server routes cannot run on static GitHub Pages.
