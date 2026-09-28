@@ -30,7 +30,7 @@ alter table public.bn_categories enable row level security;
 create policy bn_categories_read on public.bn_categories for select to anon,authenticated using(enabled);
 grant select on public.bn_categories to anon,authenticated;
 insert into public.bn_categories(name,slug,position) select x,lower(x),n from unnest(array['World','Pakistan','Politics','Business','Technology','Sports','Science','Health','Entertainment','Lifestyle']) with ordinality t(x,n);
-insert into bingnews_private.admins values ('nadeem.13613.ac@iqra.edu.pk');
+-- Populate the administrator allowlist privately using the confirmed owner email.
 insert into bingnews_private.sources values
 ('nasa','NASA','https://www.nasa.gov/feed/','Science',true,'US government factual material; media credit retained; third-party copyrighted media excluded',array['www.nasa.gov','science.nasa.gov'],array['www.nasa.gov','science.nasa.gov','images-assets.nasa.gov'],null,null),
 ('fed','Federal Reserve','https://www.federalreserve.gov/feeds/press_all.xml','Business',true,'US federal government public information; factual synthesis',array['www.federalreserve.gov'],array[]::text[],null,null),
