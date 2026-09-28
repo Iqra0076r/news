@@ -5,9 +5,9 @@ A Next.js/React newsroom with real Supabase data, full internal articles, search
 ## Current deployment
 
 - Repository: https://github.com/Iqra0076r/news
-- Intended public URL: https://iqra0076r.github.io/news/
+- Live public URL: https://iqra0076r.github.io/news/
 - Supabase project: Flarewire Automation, isolated `bn_*` tables and `bingnews_private` schema.
-- The public deployment still needs the BingNews pull request merged and the first Actions run verified. Do not describe the schedule as live before that run completes.
+- The BingNews pull request is merged. GitHub Actions has successfully built and deployed the public edition. Browser checks confirmed full article pages open in new tabs and database search returns matching reports.
 - Five real initial reports have been editorially synthesized from official material. There are no fictional demo stories or fallback demo database records.
 
 ## Run locally
@@ -51,7 +51,7 @@ Initial feeds are official NASA, Federal Reserve, NIH and NSF endpoints. They mu
 
 The current implementation covers the core publication workflow, not every extension in the supplied master brief. Dedicated embedding indexes, automatic material-update merging, category/source creation UI, a redirect registry, scheduled editorial releases, image derivative storage, full analytics dashboards and newsletter delivery are not implemented. Automated verification is fallible, especially with a small CPU model, and does not establish the truth of an external source. Use review for high-impact reporting.
 
-Tests exercise URL normalization, near-duplicate distinction, full RSS extraction, numerical fact guards and outbound-host restrictions. Type checking and the production build must pass before publication. The GitHub OIDC end-to-end workflow and email OTP still need live verification after approval to publish.
+Tests exercise URL normalization, near-duplicate distinction, full RSS extraction, numerical fact guards and outbound-host restrictions. Type checking and the production build must pass before publication. GitHub OIDC authentication, source fetching, database writes, static builds and Pages deployment have passed live execution. Generation is conservative: drafts that fail structure, numerical grounding or verification are corrected once, then held or rejected. Administrator provisioning and email delivery remain unverified; automatic approval review blocked creating the privileged account without specific owner authorization.
 
 ## Database and rollback
 
