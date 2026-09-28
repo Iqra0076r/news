@@ -1,0 +1,1 @@
+export function PolicyPage({kicker,title,children}:{kicker:string;title:string;children:React.ReactNode}){return <main><div className="pageHead"><div className="shell"><div className="kicker">{kicker}</div><h1>{title}</h1></div></div><article className="article"><div className="articleBody policyBody">{children}</div></article></main>}
