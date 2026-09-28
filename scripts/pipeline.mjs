@@ -69,11 +69,14 @@ async function main(){
     const selection=await llm(basePrompt+' Select 5 to 8 sentence IDs that contain the main news facts. Return {"sentence_ids":[integer],"sensitive":boolean,"uncertainties":[string]}. Do not write or paraphrase any facts. Sensitive=true for crime, allegations, elections, deaths, disasters, investment advice, medical treatment or health claims.',{title,sentences:evidence.map((sentence,id)=>({id,sentence}))},350);
     const ids=[...new Set(selection.sentence_ids||[])].filter(id=>Number.isInteger(id)&&id>=0&&id<evidence.length);
     if(ids.length<3)throw new Error('Insufficient grounded evidence');
-    const facts={facts:ids.map(id=>({statement:evidence[id],evidence:evidence[id]})),sensitive:selection.sensitive===true,uncertainties:selection.uncertainties||[]};
+    const facts={source_title:title,facts:ids.map(id=>({statement:evidence[id],evidence:evidence[id]})),sensitive:selection.sensitive===true,uncertainties:selection.uncertainties||[]};
     const near=state.articles.filter(a=>similarity(a.headline,title)>.2).slice(0,4);
     if(near.length){const match=await llm(basePrompt+' Decide if this describes the SAME specific event as a candidate, not merely the same topic. Return {"duplicate_id": "matching candidate id or empty string", "reason":"reason"}.',{title,facts,candidates:near},250);if(near.some(a=>a.id===match.duplicate_id)){stats.duplicates++;await runner('item',{fingerprint:fp,source_id:source.id,url,headline:title,status:'duplicate',article_id:match.duplicate_id,facts,verification:match,source_published_at:date.toISOString()});continue;}}
-    const draft=await llm(basePrompt+' Write an original concise factual news article using ONLY this fact pack. 180-300 words, 4-6 short paragraphs separated by double newlines. Neutral informative headline; no clickbait. No invented quotes or generic padding. Preserve uncertainty. Schema: {"headline":string,"standfirst":string,"body":string,"tags":[string]}. Do not mention an upstream publisher. Identify organizations that are participants when necessary.',{title,facts},1600);
-    if(!validateDraft(draft,facts))throw new Error('Article failed structural or numeric checks');
+    let draft=await llm(basePrompt+' Write an original concise factual news article using ONLY this fact pack. 180-300 words, 4-6 short paragraphs separated by double newlines. Neutral informative headline; no clickbait. No invented quotes or generic padding. Preserve uncertainty. Schema: {"headline":string,"standfirst":string,"body":string,"tags":[string]}. Do not mention an upstream publisher. Identify organizations that are participants when necessary.',{title,facts},1600);
+    if(!validateDraft(draft,facts)){
+     draft=await llm(basePrompt+' Repair this draft using ONLY the fact pack. Return headline (20-180 characters), standfirst and body as STRINGS, tags as an array. Body must be 350-15000 characters with paragraphs separated by double newlines. Remove every number absent from the fact pack. No HTML. Return {"headline":string,"standfirst":string,"body":string,"tags":[string]}.',{facts,draft},1600);
+     if(!validateDraft(draft,facts)){const failure=new Error('Article failed structural or numeric checks after correction');failure.details={draft,facts};throw failure;}
+    }
     const verification=await llm(basePrompt+' Independently compare EVERY claim in the article against the original evidence. Reject added names, numbers, certainty, causes or claims. Return {"supported":boolean,"notes":string,"unsupported_claims":[string]}. A claim not supported by evidence must cause supported=false.',{evidence:content,article:draft},500);
     const sensitive=facts.sensitive||source.category==='Health'||/\b(killed|death|arrest|convict|election|cancer|treatment|interest rate|inflation|mortgage)\b/i.test(title);
     const status=verification.supported===true&&!(verification.unsupported_claims||[]).length&&!sensitive?'published':'review';
@@ -83,7 +86,7 @@ async function main(){
     await runner('item',{fingerprint:fp,source_id:source.id,url,guid:String(raw.guid?.['#text']||raw.guid||url),headline:title,content_hash:hash(content),status:saved.duplicate?'duplicate':status,article_id:saved.id,facts,verification:{...verification,model:'Qwen2.5-1.5B-Instruct Q4_K_M',prompt_version:'bingnews-v1',license:source.license},source_published_at:date.toISOString()});
     if(saved.duplicate)stats.duplicates++;else{stats[status==='published'?'published':'review']++;state.articles.push({...article,id:saved.id});}
     console.log('Processed:',title,status);
-   }catch(e){errors.push(source.id+': '+title+': '+e.message);await runner('item',{fingerprint:fp,source_id:source.id,url,headline:title,status:'failed',verification:{error:e.message},source_published_at:date.toISOString()});}
+   }catch(e){errors.push(source.id+': '+title+': '+e.message);await runner('item',{fingerprint:fp,source_id:source.id,url,headline:title,status:'failed',verification:{error:e.message,...(e.details||{})},source_published_at:date.toISOString()});}
   }
  }finally{if(model)model.kill();await runner('finish',{id:state.id,status:errors.length?'partial':'success',stats,errors});console.log(JSON.stringify({stats,errors}));}
 }
