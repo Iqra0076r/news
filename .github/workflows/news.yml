@@ -37,7 +37,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - name: Install local inference engine
-        run: pip install 'llama-cpp-python==0.3.35' --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --only-binary=:all:
+        run: |
+          pip install 'llama-cpp-python==0.3.35' --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --only-binary=:all:
       - name: Download open newsroom model
         run: |
           mkdir -p models
